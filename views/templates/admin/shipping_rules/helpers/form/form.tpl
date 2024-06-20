@@ -48,6 +48,33 @@
                 </select>
             </div>
         </div>
+    {elseif $input.name == 'id_country'}
+
+        <select name="{$input.name|escape:'html':'utf-8'}"
+                class="{if isset($input.class)}{$input.class|escape:'html':'utf-8'}{/if} fixed-width-xl"
+                id="{if isset($input.id)}{$input.id|escape:'html':'utf-8'}{else}{$input.name|escape:'html':'utf-8'}{/if}"
+                >
+            {if isset($input.options.default)}
+                <option value="{$input.options.default.value|escape:'html':'utf-8'}" data-id-zone="-1">{$input.options.default.label|escape:'html':'utf-8'}</option>
+            {/if}
+
+            {foreach $input.options.query AS $option}
+                    <option value="{$option[$input.options.id]}"
+                            {if isset($input.multiple)}
+                                {foreach $fields_value[$input.name] as $field_value}
+                                    {if $field_value == $option[$input.options.id]}
+                                        selected="selected"
+                                    {/if}
+                                {/foreach}
+                            {else}
+                                {if $fields_value[$input.name] == $option[$input.options.id]}
+                                    selected="selected"
+                                {/if}
+                            {/if}
+                            data-id-zone="{$option.id_zone}"
+                    >{$option[$input.options.name]}</option>
+            {/foreach}
+        </select>
     {else}
         {$smarty.block.parent}
     {/if}

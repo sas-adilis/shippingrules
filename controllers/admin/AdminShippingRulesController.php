@@ -129,6 +129,28 @@ class AdminShippingRulesController extends ModuleAdminController
                         'name' => 'name'
                     ),
                 ),
+                [
+                    'type' => 'select',
+                    'name' => 'rule_type',
+                    'label' => $this->l('Rule type'),
+                    'required' => true,
+                    'options' => [
+                        'query' => [
+                            ['id' => ShippingRulesClass::RULE_TYPE_FREE, 'name' => $this->l('Free shipping')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost')]
+                        ],
+                        'id' => 'id',
+                        'name' => 'name',
+                    ]
+                ],
+                array(
+                    'type' => 'text',
+                    'label' => $this->l('Impact amount'),
+                    'name' => 'impact_amount',
+                    'maxlength' => 10,
+                    'suffix' =>  $this->context->currency->getSign('right').' '.$this->l('(tax excl.)'),
+                    'required' => true,
+                ),
                 array(
                     'type' => 'amount_taxes',
                     'label' => $this->l('From price'),
@@ -237,5 +259,11 @@ class AdminShippingRulesController extends ModuleAdminController
         }
 
         return parent::_childValidation();
+    }
+
+    public function setMedia($isNewTheme = false)
+    {
+        parent::setMedia($isNewTheme);
+        $this->addJS(__DIR__.'/../../views/js/admin.js');
     }
 }
