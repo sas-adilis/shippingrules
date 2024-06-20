@@ -1,9 +1,10 @@
 <?php
-require_once (__DIR__.'/classes/ShippingRulesClass.php');
+
+require_once __DIR__ . '/classes/ShippingRulesClass.php';
 
 class ShippingRules extends Module
 {
-    function __construct()
+    public function __construct()
     {
         $this->name = 'shippingrules';
         $this->author = 'Adilis';
@@ -14,15 +15,15 @@ class ShippingRules extends Module
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy = ['min' => '1.6', 'max' => _PS_VERSION_];
 
         parent::__construct();
     }
 
     public function install()
     {
-        if (file_exists($this->getLocalPath().'sql/install.php')) {
-            require_once($this->getLocalPath().'sql/install.php');
+        if (file_exists($this->getLocalPath() . 'sql/install.php')) {
+            require_once $this->getLocalPath() . 'sql/install.php';
         }
 
         return
@@ -42,13 +43,12 @@ class ShippingRules extends Module
             && $this->uninstallTab();
     }
 
-
     private function installTab()
     {
         if (!Tab::getIdFromClassName('AdminShippingRules')) {
             $tab = new Tab();
             $tab->name = [];
-            foreach(Language::getLanguages(false) as $lang) {
+            foreach (Language::getLanguages(false) as $lang) {
                 $tab->name[$lang['id_lang']] = $this->displayName;
             }
             $tab->class_name = 'AdminShippingRules';
@@ -68,20 +68,21 @@ class ShippingRules extends Module
      */
     public function uninstallTab()
     {
-        if (($id_tab = Tab::getIdFromClassName('AdminShippingRules'))) {
+        if ($id_tab = Tab::getIdFromClassName('AdminShippingRules')) {
             $tab = new Tab($id_tab);
             if (!$tab->delete()) {
                 return false;
             }
         }
+
         return true;
     }
 
-    public function hookActionGetPackageShippingCost($params) {
+    public function hookActionGetPackageShippingCost($params)
+    {
         if ($params['shipping_cost'] === false) {
             return;
         }
-
 
         /** @var Cart $cart */
         $cart = $params['cart'];
@@ -90,10 +91,10 @@ class ShippingRules extends Module
 
         // Address
         if (Configuration::get('PS_TAX_ADDRESS_TYPE') == 'id_address_invoice') {
-            $address_id = (int)$cart->id_address_invoice;
+            $address_id = (int) $cart->id_address_invoice;
         } elseif (count($product_list)) {
             $prod = current($product_list);
-            $address_id = (int)$prod['id_address_delivery'];
+            $address_id = (int) $prod['id_address_delivery'];
         } else {
             $address_id = null;
         }
@@ -108,7 +109,7 @@ class ShippingRules extends Module
         } else {
             $address = Address::initialize($address_id, true);
             $id_country = $address->id_country;
-            $id_zone = Address::getZoneById((int)$address->id);
+            $id_zone = Address::getZoneById((int) $address->id);
         }
 
         // Carrier
@@ -121,15 +122,15 @@ class ShippingRules extends Module
             return;
         }
 
-        $cache_id = 'ShippingRules::hookActionGetPackageShippingCost_'.(int)$id_country.'_'.(int)$id_zone;
+        $cache_id = 'ShippingRules::hookActionGetPackageShippingCost_' . (int) $id_country . '_' . (int) $id_zone;
         if (Cache::isStored($cache_id)) {
             $shipping_rules = Cache::retrieve($cache_id);
         } else {
             $query = new DbQuery();
             $query->select('*');
             $query->from('shipping_rule');
-            $query->where('id_zone = ' . (int)$id_zone);
-            $query->where('id_country IN (' . (int)$id_country . ', 0)');
+            $query->where('id_zone = ' . (int) $id_zone);
+            $query->where('id_country IN (' . (int) $id_country . ', 0)');
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
             $query->where('`to` >= NOW()');
@@ -138,11 +139,10 @@ class ShippingRules extends Module
         }
 
         $cart_amount_tax_excl = $cart->getOrderTotal(false, Cart::ONLY_PRODUCTS);
-        $cart_amount_tax_incl = $cart->getOrderTotal(false, Cart::ONLY_PRODUCTS);
+        $cart_amount_tax_incl = $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
         $cart_weight = $cart->getTotalWeight();
 
         foreach ($shipping_rules as $shipping_rule) {
-
             $cart_amount_tax = $shipping_rule['minimum_amount_tax'] ? $cart_amount_tax_incl : $cart_amount_tax_excl;
             $cart_amount_tax = Tools::convertPrice($cart_amount_tax, $shipping_rule['minimum_amount_currency']);
 
@@ -153,8 +153,13 @@ class ShippingRules extends Module
                 && $cart_weight >= $shipping_rule['minimum_weight']
                 && $cart_weight <= $shipping_rule['maximum_weight']
             ) {
-                if ($shipping_rule['rule_type'] == ShippingRulesClass::RULE_TYPE_FREE) {
-                    $params['shipping_cost'] = 0;
+                switch ($shipping_rule['rule_type']) {
+                    case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+                        $params['shipping_cost'] += $shipping_rule['impact_amount'];
+                        break;
+                    case ShippingRulesClass::RULE_TYPE_FREE:
+                        $params['shipping_cost'] = 0;
+                        break;
                 }
             }
         }

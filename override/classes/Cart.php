@@ -1,10 +1,11 @@
 <?php
 
-class Cart extends CartCore {
+class Cart extends CartCore
+{
     public function getPackageShippingCost(
         $id_carrier = null,
         $use_tax = true,
-        Country $default_country = null,
+        ?Country $default_country = null,
         $product_list = null,
         $id_zone = null,
         bool $keepOrderPrices = false
@@ -26,7 +27,7 @@ class Cart extends CartCore {
             'default_country' => $default_country,
             'product_list' => $product_list,
             'id_zone' => $id_zone,
-            'keepOrderPrices' => $keepOrderPrices
+            'keepOrderPrices' => $keepOrderPrices,
         ]);
 
         return $shipping_cost;

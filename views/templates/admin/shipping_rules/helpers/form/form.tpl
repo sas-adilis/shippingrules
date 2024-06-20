@@ -75,6 +75,10 @@
                     >{$option[$input.options.name]}</option>
             {/foreach}
         </select>
+    {elseif $input.type == 'separator'}
+        <div class="separator">
+            {$input.content|escape:'htmlall':'UTF-8'}
+        </div>
     {else}
         {$smarty.block.parent}
     {/if}

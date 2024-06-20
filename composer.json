@@ -1,0 +1,17 @@
+{
+    "name": "sas-adilis/shippingrules",
+    "config": {
+        "prepend-autoloader": false
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.42"
+    },
+    "authors": [
+        {
+            "name": "sas-adilis",
+            "email": "contact@adilis.fr"
+        }
+    ],
+    "author": "PrestaShop",
+    "license": "OSL-3.0"
+}

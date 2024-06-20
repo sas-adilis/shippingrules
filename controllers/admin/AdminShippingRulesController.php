@@ -4,7 +4,7 @@ class AdminShippingRulesController extends ModuleAdminController
 {
     public function __construct()
     {
-        require_once (__DIR__.'/../../classes/ShippingRulesClass.php');
+        require_once __DIR__ . '/../../classes/ShippingRulesClass.php';
 
         $this->className = 'ShippingRulesClass';
         $this->table = 'shipping_rule';
@@ -15,68 +15,65 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->addRowAction('edit');
         $this->addRowAction('delete');
 
-
         $this->_select = 'co_l.name country_name, ca.name carrier_name';
         $this->_join = '
-            LEFT JOIN '._DB_PREFIX_.'carrier ca ON (ca.id_reference = a.id_carrier AND deleted=0)
-            LEFT JOIN '._DB_PREFIX_.'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang='.(int)Context::getContext()->cookie->id_lang.')
+            LEFT JOIN ' . _DB_PREFIX_ . 'carrier ca ON (ca.id_reference = a.id_carrier AND deleted=0)
+            LEFT JOIN ' . _DB_PREFIX_ . 'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang=' . (int) Context::getContext()->cookie->id_lang . ')
 		';
         $this->_use_found_rows = false;
 
         parent::__construct();
 
-        $this->bulk_actions = array(
-            'delete' => array(
-                'text' => $this->trans('Delete selected', array(), 'Admin.Actions'),
-                'confirm' => $this->trans('Delete selected items?', array(), 'Admin.Notifications.Warning'),
+        $this->bulk_actions = [
+            'delete' => [
+                'text' => $this->trans('Delete selected', [], 'Admin.Actions'),
+                'confirm' => $this->trans('Delete selected items?', [], 'Admin.Notifications.Warning'),
                 'icon' => 'icon-trash',
-            ),
-        );
+            ],
+        ];
 
-        $this->fields_list = array(
-            'id_shipping_rule' => array(
-                'title' => $this->trans('ID', array(), 'Admin.Global'),
+        $this->fields_list = [
+            'id_shipping_rule' => [
+                'title' => $this->trans('ID', [], 'Admin.Global'),
                 'align' => 'center',
                 'class' => 'fixed-width-xs',
-            ),
-            'carrier_name' => array(
+            ],
+            'carrier_name' => [
                 'title' => $this->l('Carrier'),
                 'align' => 'center',
-                'filter_key' => 'ca!name'
-            ),
-            'country_name' => array(
+                'filter_key' => 'ca!name',
+            ],
+            'country_name' => [
                 'title' => $this->l('Country'),
                 'align' => 'center',
-                'filter_key' => 'co_l!name'
-            ),
-            'amount' => array(
+                'filter_key' => 'co_l!name',
+            ],
+            'amount' => [
                 'type' => 'price',
                 'title' => $this->l('Price (tax excl.) >='),
                 'align' => 'center',
-            ),
-            'from' => array(
+            ],
+            'from' => [
                 'title' => $this->l('Beginning'),
                 'align' => 'right',
                 'type' => 'datetime',
-            ),
-            'to' => array(
+            ],
+            'to' => [
                 'title' => $this->l('End'),
                 'align' => 'right',
-                'type' => 'datetime'
-            ),
-            'active' => array(
+                'type' => 'datetime',
+            ],
+            'active' => [
                 'title' => $this->l('Active'),
                 'active' => 'status',
                 'type' => 'bool',
                 'class' => 'fixed-width-xs',
                 'align' => 'center',
                 'ajax' => true,
-                'orderby' => false
-            )
-        );
-
+                'orderby' => false,
+            ],
+        ];
     }
-
 
     public function renderForm()
     {
@@ -85,50 +82,60 @@ class AdminShippingRulesController extends ModuleAdminController
         $zones = Zone::getZones($this->context->cookie->id_lang, false);
         $currencies = Currency::getCurrencies();
 
-        $this->fields_form = array(
-            'legend' => array(
+        $this->fields_form = [
+            'legend' => [
                 'title' => $this->l('Shipping rule'),
                 'icon' => 'icon-group',
-            ),
-            'submit' => array(
+            ],
+            'submit' => [
                 'title' => $this->l('Save'),
-            ),
-            'input' => array(
-                array(
+            ],
+            'input' => [
+                [
                     'type' => 'select',
                     'label' => $this->l('Carrier'),
                     'name' => 'id_carrier',
                     'required' => true,
-                    'options' => array(
-                        'default' => array( 'value' => 0, 'label' => $this->l('All carriers') ),
+                    'options' => [
+                        'default' => ['value' => 0, 'label' => $this->l('All carriers')],
                         'query' => $carriers,
                         'id' => 'id_reference',
-                        'name' => 'name'
-                    ),
-                ),
-                array(
+                        'name' => 'name',
+                    ],
+                ],
+                [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'content' => $this->l('Zone and country'),
+                ],
+                [
                     'type' => 'select',
                     'label' => $this->l('Zone'),
                     'name' => 'id_zone',
                     'required' => true,
-                    'options' => array(
-                        'default' => array( 'value' => 0, 'label' => $this->l('All zones') ),
+                    'options' => [
+                        'default' => ['value' => 0, 'label' => $this->l('All zones')],
                         'query' => $zones,
                         'id' => 'id_zone',
-                        'name' => 'name'
-                    ),
-                ),
-                array(
+                        'name' => 'name',
+                    ],
+                ],
+                [
                     'type' => 'select',
                     'label' => $this->l('Country'),
                     'name' => 'id_country',
-                    'options' => array(
-                        'default' => array( 'value' => 0, 'label' => $this->l('All countries') ),
+                    'options' => [
+                        'default' => ['value' => 0, 'label' => $this->l('All countries')],
                         'query' => $countries,
                         'id' => 'id_country',
-                        'name' => 'name'
-                    ),
-                ),
+                        'name' => 'name',
+                    ],
+                ],
+                [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'content' => $this->l('Action'),
+                ],
                 [
                     'type' => 'select',
                     'name' => 'rule_type',
@@ -137,88 +144,93 @@ class AdminShippingRulesController extends ModuleAdminController
                     'options' => [
                         'query' => [
                             ['id' => ShippingRulesClass::RULE_TYPE_FREE, 'name' => $this->l('Free shipping')],
-                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost')]
+                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost')],
                         ],
                         'id' => 'id',
                         'name' => 'name',
-                    ]
+                    ],
                 ],
-                array(
+                [
                     'type' => 'text',
                     'label' => $this->l('Impact amount'),
                     'name' => 'impact_amount',
                     'maxlength' => 10,
-                    'suffix' =>  $this->context->currency->getSign('right').' '.$this->l('(tax excl.)'),
+                    'suffix' => $this->context->currency->getSign('right') . ' ' . $this->l('(tax excl.)'),
                     'required' => true,
-                ),
-                array(
+                ],
+                [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'content' => $this->l('Conditions'),
+                ],
+                [
                     'type' => 'amount_taxes',
                     'label' => $this->l('From price'),
                     'name' => 'minimum_amount',
                     'maxlength' => 10,
-                    'suffix' =>  $this->context->currency->getSign('right'),
+                    'suffix' => $this->context->currency->getSign('right'),
                     'required' => true,
                     'currencies' => $currencies,
-                ),
-                array(
+                ],
+                [
                     'type' => 'amount_taxes',
                     'label' => $this->l('To price'),
                     'name' => 'maximum_amount',
                     'maxlength' => 10,
-                    'suffix' =>  $this->context->currency->getSign('right'),
+                    'suffix' => $this->context->currency->getSign('right'),
                     'required' => true,
                     'currencies' => $currencies,
-                ),
-                array(
+                ],
+                [
                     'type' => 'text',
                     'label' => $this->l('From weight'),
                     'name' => 'minimum_weight',
                     'class' => 'fixed-width-md',
                     'maxlength' => 10,
-                    'suffix' =>  Configuration::get('PS_WEIGHT_UNIT'),
+                    'suffix' => Configuration::get('PS_WEIGHT_UNIT'),
                     'required' => true,
-                ),
-                array(
+                ],
+                [
                     'type' => 'text',
                     'label' => $this->l('To weight'),
                     'name' => 'maximum_weight',
                     'class' => 'fixed-width-md',
                     'maxlength' => 10,
-                    'suffix' =>  Configuration::get('PS_WEIGHT_UNIT'),
+                    'suffix' => Configuration::get('PS_WEIGHT_UNIT'),
                     'required' => true,
-                ),
-                array(
+                ],
+                [
                     'type' => 'datetime',
                     'label' => $this->l('From'),
-                    'name' => 'from'
-                ),
-                array(
+                    'name' => 'from',
+                ],
+                [
                     'type' => 'datetime',
                     'label' => $this->l('To'),
-                    'name' => 'to'
-                ),
-                array(
+                    'name' => 'to',
+                ],
+                [
                     'type' => 'switch',
-                    'label' => $this->trans('Active', array(), 'Admin.Global'),
+                    'label' => $this->trans('Active', [], 'Admin.Global'),
                     'name' => 'active',
                     'required' => false,
                     'class' => 't',
                     'is_bool' => true,
-                    'values' => array(
-                        array(
+                    'values' => [
+                        [
                             'id' => 'active_on',
                             'value' => 1,
-                            'label' => $this->trans('Enabled', array(), 'Admin.Global'),
-                        ),
-                        array(
+                            'label' => $this->trans('Enabled', [], 'Admin.Global'),
+                        ],
+                        [
                             'id' => 'active_off',
                             'value' => 0,
-                            'label' => $this->trans('Disabled', array(), 'Admin.Global'),
-                        ),
-                    )
-                ),
-            ),
-        );
+                            'label' => $this->trans('Disabled', [], 'Admin.Global'),
+                        ],
+                    ],
+                ],
+            ],
+        ];
 
         $this->fields_value['minimum_amount_tax'] = $this->object->minimum_amount_tax;
         $this->fields_value['minimum_amount_currency'] = $this->object->minimum_amount_currency;
@@ -226,11 +238,11 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->fields_value['maximum_amount_currency'] = $this->object->maximum_amount_currency;
 
         if (Shop::isFeatureActive()) {
-            $this->fields_form['input'][] = array(
+            $this->fields_form['input'][] = [
                 'type' => 'shop',
-                'label' => $this->trans('Shop association', array(), 'Admin.Global'),
+                'label' => $this->trans('Shop association', [], 'Admin.Global'),
                 'name' => 'checkBoxShopAsso',
-            );
+            ];
         }
 
         return parent::renderForm();
@@ -264,6 +276,7 @@ class AdminShippingRulesController extends ModuleAdminController
     public function setMedia($isNewTheme = false)
     {
         parent::setMedia($isNewTheme);
-        $this->addJS(__DIR__.'/../../views/js/admin.js');
+        $this->addJS(__DIR__ . '/../../views/js/admin.js');
+        $this->addCSS(__DIR__ . '/../../views/css/admin.css');
     }
 }

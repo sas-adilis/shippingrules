@@ -2,7 +2,6 @@
 
 function upgrade_module_1_1_0($module)
 {
-
     $queries = [
         'ALTER TABLE `' . _DB_PREFIX_ . 'shipping_rule` CHANGE `amount` `minimum_amount` decimal(20,6) NOT NULL;',
         'ALTER TABLE `' . _DB_PREFIX_ . 'shipping_rule` ADD `minimum_amount_tax` tinyint(1) default 0 NOT NULL;',
@@ -23,4 +22,3 @@ function upgrade_module_1_1_0($module)
 
     return true;
 }
-?>
