@@ -95,7 +95,6 @@ class AdminShippingRulesController extends ModuleAdminController
                     'type' => 'select',
                     'label' => $this->l('Carrier'),
                     'name' => 'id_carrier',
-                    'required' => true,
                     'options' => [
                         'default' => ['value' => 0, 'label' => $this->l('All carriers')],
                         'query' => $carriers,
@@ -112,7 +111,6 @@ class AdminShippingRulesController extends ModuleAdminController
                     'type' => 'select',
                     'label' => $this->l('Zone'),
                     'name' => 'id_zone',
-                    'required' => true,
                     'options' => [
                         'default' => ['value' => 0, 'label' => $this->l('All zones')],
                         'query' => $zones,

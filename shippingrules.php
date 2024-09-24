@@ -11,7 +11,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.1';
+        $this->version = '1.1.2';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -129,7 +129,7 @@ class ShippingRules extends Module
             $query = new DbQuery();
             $query->select('*');
             $query->from('shipping_rule');
-            $query->where('id_zone = ' . (int) $id_zone);
+            $query->where('id_zone IN (' . (int) $id_zone . ', 0)');
             $query->where('id_country IN (' . (int) $id_country . ', 0)');
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
@@ -147,7 +147,7 @@ class ShippingRules extends Module
             $cart_amount_tax = Tools::convertPrice($cart_amount_tax, $shipping_rule['minimum_amount_currency']);
 
             if (
-                $shipping_rule['id_carrier'] == $carrier->id_reference
+                ($shipping_rule['id_carrier'] == $carrier->id_reference || $shipping_rule['id_carrier'] == 0)
                 && $cart_amount_tax >= $shipping_rule['minimum_amount']
                 && $cart_amount_tax <= $shipping_rule['maximum_amount']
                 && $cart_weight >= $shipping_rule['minimum_weight']
@@ -163,5 +163,9 @@ class ShippingRules extends Module
                 }
             }
         }
+    }
+
+    public function getContent() {
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminShippingRules'));
     }
 }
