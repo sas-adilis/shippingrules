@@ -4,7 +4,6 @@
  * @copyright 2024 SAS Adilis
  * @license   http://www.adilis.fr
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -24,10 +23,11 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->addRowAction('edit');
         $this->addRowAction('delete');
 
-        $this->_select = 'co_l.name country_name, ca.name carrier_name';
+        $this->_select = 'co_l.name country_name, ca.name carrier_name, z.name zone_name';
         $this->_join = '
             LEFT JOIN ' . _DB_PREFIX_ . 'carrier ca ON (ca.id_reference = a.id_carrier AND deleted=0)
             LEFT JOIN ' . _DB_PREFIX_ . 'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang=' . (int) Context::getContext()->cookie->id_lang . ')
+            LEFT JOIN ' . _DB_PREFIX_ . 'zone z ON z.id_zone = a.id_zone
 		';
         $this->_use_found_rows = false;
 
@@ -51,16 +51,61 @@ class AdminShippingRulesController extends ModuleAdminController
                 'title' => $this->l('Carrier'),
                 'align' => 'center',
                 'filter_key' => 'ca!name',
+                'type' => 'select',
+                'list' => array_reduce(
+                    Carrier::getCarriers(Context::getContext()->cookie->id_lang, true, 0, false, null, Carrier::ALL_CARRIERS),
+                    function ($carry, $item) {
+                        $carry[$item['id_carrier']] = $item['name'];
+
+                        return $carry;
+                    },
+                    []
+                ),
+                'callback' => 'getCarrierName',
+            ],
+            'zone_name' => [
+                'title' => $this->l('Zone'),
+                'align' => 'center',
+                'filter_key' => 'z!id_zone',
+                'type' => 'select',
+                'list' => array_reduce(
+                    Zone::getZones(Context::getContext()->cookie->id_lang),
+                    function ($carry, $item) {
+                        $carry[$item['id_zone']] = $item['name'];
+
+                        return $carry;
+                    },
+                    []
+                ),
+                'callback' => 'getZoneName',
             ],
             'country_name' => [
                 'title' => $this->l('Country'),
                 'align' => 'center',
-                'filter_key' => 'co_l!name',
+                'type' => 'select',
+                'filter_key' => 'co_l!id_country',
+                'list' => array_reduce(
+                    Country::getCountries(Context::getContext()->cookie->id_lang),
+                    function ($carry, $item) {
+                        $carry[$item['id_country']] = $item['name'];
+
+                        return $carry;
+                    },
+                    []
+                ),
+                'callback' => 'getCountryName',
             ],
-            'amount' => [
-                'type' => 'price',
-                'title' => $this->l('Price (tax excl.) >='),
-                'align' => 'center',
+            'rule_type' => [
+                'type' => 'select',
+                'title' => $this->l('Rule type'),
+                'list' => [
+                    ShippingRulesClass::RULE_TYPE_FREE => $this->l('Free shipping'),
+                    ShippingRulesClass::RULE_TYPE_ADDITIONAL => $this->l('Additional cost (amount)'),
+                    ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT => $this->l('Additional cost (percent)'),
+                    ShippingRulesClass::RULE_TYPE_DISABLE => $this->l('Disable carrier'),
+                ],
+                'filter_key' => 'a!rule_type',
+                'callback' => 'getRuleTypeName',
             ],
             'from' => [
                 'title' => $this->l('Beginning'),
@@ -84,6 +129,47 @@ class AdminShippingRulesController extends ModuleAdminController
         ];
     }
 
+    public function getCarrierName($carrier, $tr)
+    {
+        if ((int) $tr['id_carrier'] == 0) {
+            return $this->l('All carriers');
+        }
+
+        return $carrier;
+    }
+
+    public function getCountryName($country, $tr)
+    {
+        if ((int) $tr['id_country'] == 0) {
+            return $this->l('All countries');
+        }
+
+        return $country;
+    }
+
+    public function getZoneName($zone, $tr)
+    {
+        if ((int) $tr['id_zone'] == 0) {
+            return $this->l('All zones');
+        }
+
+        return $zone;
+    }
+
+    public function getRuleTypeName($rule_type, $tr)
+    {
+        switch ($rule_type) {
+            case ShippingRulesClass::RULE_TYPE_FREE:
+                return $this->l('Free shipping');
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+                return $this->l('Additional cost (amount)');
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+                return $this->l('Additional cost (percent)');
+            case ShippingRulesClass::RULE_TYPE_DISABLE:
+                return $this->l('Disable carrier');
+        }
+    }
+
     public function renderForm()
     {
         $carriers = Carrier::getCarriers($this->context->cookie->id_lang, true, 0, false, null, Carrier::ALL_CARRIERS);
@@ -101,6 +187,12 @@ class AdminShippingRulesController extends ModuleAdminController
             ],
             'input' => [
                 [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'name' => '',
+                    'content' => $this->l('Carrier and location'),
+                ],
+                [
                     'type' => 'select',
                     'label' => $this->l('Carrier'),
                     'name' => 'id_carrier',
@@ -110,12 +202,6 @@ class AdminShippingRulesController extends ModuleAdminController
                         'id' => 'id_reference',
                         'name' => 'name',
                     ],
-                ],
-                [
-                    'type' => 'separator',
-                    'col' => 12,
-                    'name' => '',
-                    'content' => $this->l('Zone and country'),
                 ],
                 [
                     'type' => 'select',
