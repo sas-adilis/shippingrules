@@ -1,3 +1,9 @@
+/**
+ * @author    Adilis <support@adilis.fr>
+ * @copyright 2024 SAS Adilis
+ * @license   http://www.adilis.fr
+ */
+
 $(function () {
     const $selectCountryClone = $('#id_country').clone();
     const $idZoneSelect = $('#id_zone');
