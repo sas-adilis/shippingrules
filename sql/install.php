@@ -1,22 +1,31 @@
 <?php
+/**
+ * @author    Adilis <support@adilis.fr>
+ * @copyright 2024 SAS Adilis
+ * @license   http://www.adilis.fr
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 $sql = [];
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'shipping_rule` (
     `id_shipping_rule` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-    `id_carrier` int(11) unsigned NOT NULL,
-    `rule_type` tinyint(1) NOT NULL,
-    `id_country` int(11) unsigned NOT NULL,
-    `id_zone` int(11) unsigned NOT NULL,
+    `id_carrier` int(11) default 0 unsigned NOT NULL,
+    `rule_type` tinyint(1) default 1 NOT NULL,
+    `id_country` int(11) unsigned default 0 NOT NULL,
+    `id_zone` int(11) unsigned default 0 NOT NULL,
     `id_group` int(11) unsigned default 0 NOT NULL,
-    `minimum_amount` decimal(20,6) NOT NULL,
+    `minimum_amount` decimal(20,6) default 0 NOT NULL,
     `minimum_amount_tax` tinyint(1) default 0 NOT NULL,
     `minimum_amount_currency` int(11) unsigned NOT NULL,
-    `maximum_amount` decimal(20,6) NOT NULL,
+    `maximum_amount` decimal(20,6) default 9999 NOT NULL,
     `maximum_amount_tax` tinyint(1) default 0 NOT NULL,
     `maximum_amount_currency` tinyint(1) default 0 NOT NULL,
-    `minimum_weight` decimal(20,6) NOT NULL,
-    `maximum_weight` decimal(20,6) NOT NULL,
+    `minimum_weight` decimal(20,6) default 0 NOT NULL,
+    `maximum_weight` decimal(20,6) default 9999 NOT NULL,
     `impact_amount` decimal(20,6) default 0 NOT NULL,
     `impact_percent` decimal(20,6) default 0 NOT NULL,
     `from` datetime NOT NULL,

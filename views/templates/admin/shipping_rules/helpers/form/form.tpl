@@ -1,3 +1,9 @@
+{**
+* @author    Adilis <support@adilis.fr>
+* @copyright 2024 SAS Adilis
+* @license   http://www.adilis.fr
+*}
+
 {extends file="helpers/form/form.tpl"}
 {block name="input"}
     {if $input.type == 'amount_taxes'}

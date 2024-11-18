@@ -1,4 +1,13 @@
 <?php
+/**
+ * @author    Adilis <support@adilis.fr>
+ * @copyright 2024 SAS Adilis
+ * @license   http://www.adilis.fr
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 require_once __DIR__ . '/classes/ShippingRulesClass.php';
 
