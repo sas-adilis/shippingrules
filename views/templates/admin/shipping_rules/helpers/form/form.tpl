@@ -27,7 +27,7 @@
                 {/if}
                         <input type="text"
                                name="{$input.name|escape:'html':'UTF-8'}"
-                               id="{if isset($input.id)}{$input.id}{else}{$input.name|escape:'html':'UTF-8'}{/if}"
+                               id="{if isset($input.id)}{$input.id|escape:'html':'UTF-8'}{else}{$input.name|escape:'html':'UTF-8'}{/if}"
                                value="{$fields_value[$input.name]|escape:'html':'UTF-8'}"
                                class="{if isset($input.class)}{$input.class|escape:'html':'UTF-8'}{/if}{if $input.type == 'tags'} tagify{/if}"
                         />
