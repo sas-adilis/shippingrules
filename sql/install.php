@@ -4,7 +4,6 @@
  * @copyright 2024 SAS Adilis
  * @license   http://www.adilis.fr
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
