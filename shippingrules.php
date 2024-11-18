@@ -11,7 +11,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.2';
+        $this->version = '1.1.3';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -78,6 +78,11 @@ class ShippingRules extends Module
         return true;
     }
 
+    /**
+     * @throws PrestaShopException
+     * @throws PrestaShopDatabaseException
+     * @throws Exception
+     */
     public function hookActionGetPackageShippingCost($params)
     {
         if ($params['shipping_cost'] === false) {
@@ -122,7 +127,13 @@ class ShippingRules extends Module
             return;
         }
 
+        $groups = $this->context->customer->getGroups();
+        $groups[] = 0;
+        sort($groups);
+
         $cache_id = 'ShippingRules::hookActionGetPackageShippingCost_' . (int) $id_country . '_' . (int) $id_zone;
+        $cache_id .= '_' . implode('_', $groups);
+
         if (Cache::isStored($cache_id)) {
             $shipping_rules = Cache::retrieve($cache_id);
         } else {
@@ -131,6 +142,7 @@ class ShippingRules extends Module
             $query->from('shipping_rule');
             $query->where('id_zone IN (' . (int) $id_zone . ', 0)');
             $query->where('id_country IN (' . (int) $id_country . ', 0)');
+            $query->where('id_group IN (' . implode(',', array_map('intval', $groups)) . ')');
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
             $query->where('`to` >= NOW()');
@@ -157,15 +169,24 @@ class ShippingRules extends Module
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
                         $params['shipping_cost'] += $shipping_rule['impact_amount'];
                         break;
+                    case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+                        if ($params['shipping_cost'] > 0) {
+                            $params['shipping_cost'] += $params['shipping_cost'] * $shipping_rule['impact_percent'] / 100;
+                        }
+                        break;
                     case ShippingRulesClass::RULE_TYPE_FREE:
                         $params['shipping_cost'] = 0;
+                        break;
+                    case ShippingRulesClass::RULE_TYPE_DISABLE:
+                        $params['shipping_cost'] = false;
                         break;
                 }
             }
         }
     }
 
-    public function getContent() {
+    public function getContent()
+    {
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminShippingRules'));
     }
 }

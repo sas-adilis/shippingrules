@@ -105,6 +105,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 [
                     'type' => 'separator',
                     'col' => 12,
+                    'name' => '',
                     'content' => $this->l('Zone and country'),
                 ],
                 [
@@ -132,6 +133,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 [
                     'type' => 'separator',
                     'col' => 12,
+                    'name' => '',
                     'content' => $this->l('Action'),
                 ],
                 [
@@ -142,7 +144,9 @@ class AdminShippingRulesController extends ModuleAdminController
                     'options' => [
                         'query' => [
                             ['id' => ShippingRulesClass::RULE_TYPE_FREE, 'name' => $this->l('Free shipping')],
-                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost (amount)')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT, 'name' => $this->l('Additional cost (percent)')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_DISABLE, 'name' => $this->l('Disable carrier')],
                         ],
                         'id' => 'id',
                         'name' => 'name',
@@ -157,9 +161,31 @@ class AdminShippingRulesController extends ModuleAdminController
                     'required' => true,
                 ],
                 [
+                    'type' => 'text',
+                    'label' => $this->l('Impact percent'),
+                    'name' => 'impact_percent',
+                    'maxlength' => 10,
+                    'suffix' => '%',
+                    'required' => true,
+                ],
+                [
                     'type' => 'separator',
                     'col' => 12,
+                    'name' => '',
                     'content' => $this->l('Conditions'),
+                ],
+                [
+                    'type' => 'select',
+                    'name' => 'id_group',
+                    'id' => 'id_group',
+                    'label' => $this->l('Customer group'),
+                    'required' => true,
+                    'options' => [
+                        'default' => ['value' => 0, 'label' => $this->l('All groups')],
+                        'query' => Group::getGroups($this->context->cookie->id_lang, true),
+                        'id' => 'id_group',
+                        'name' => 'name',
+                    ],
                 ],
                 [
                     'type' => 'amount_taxes',
@@ -200,11 +226,13 @@ class AdminShippingRulesController extends ModuleAdminController
                 [
                     'type' => 'datetime',
                     'label' => $this->l('From'),
+                    'required' => true,
                     'name' => 'from',
                 ],
                 [
                     'type' => 'datetime',
                     'label' => $this->l('To'),
+                    'required' => true,
                     'name' => 'to',
                 ],
                 [
