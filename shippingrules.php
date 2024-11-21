@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.3';
+        $this->version = '1.1.4';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -151,6 +151,7 @@ class ShippingRules extends Module
             $query->where('id_zone IN (' . (int) $id_zone . ', 0)');
             $query->where('id_country IN (' . (int) $id_country . ', 0)');
             $query->where('id_group IN (' . implode(',', array_map('intval', $groups)) . ')');
+            $query->where('id_customer IN (0, ' . (int) $this->context->customer->id . ')');
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
             $query->where('`to` >= NOW()');
@@ -173,13 +174,23 @@ class ShippingRules extends Module
                 && $cart_weight >= $shipping_rule['minimum_weight']
                 && $cart_weight <= $shipping_rule['maximum_weight']
             ) {
+                if (!empty($shipping_rule['postcode_list'])) {
+                    $postcode_list = self::getCleanedPostcodeList($shipping_rule['postcode_list']);
+                    if (!isset($address) || !Validate::isLoadedObject($address)) {
+                        $address = new Address($address_id);
+                    }
+                    if (!in_array($address->postcode, $postcode_list)) {
+                        continue;
+                    }
+                }
+
                 switch ($shipping_rule['rule_type']) {
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
-                        $params['shipping_cost'] += $shipping_rule['impact_amount'];
+                        $params['shipping_cost'] += $shipping_rule['value'];
                         break;
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
                         if ($params['shipping_cost'] > 0) {
-                            $params['shipping_cost'] += $params['shipping_cost'] * $shipping_rule['impact_percent'] / 100;
+                            $params['shipping_cost'] += $params['shipping_cost'] * $shipping_rule['value'] / 100;
                         }
                         break;
                     case ShippingRulesClass::RULE_TYPE_FREE:
@@ -187,6 +198,9 @@ class ShippingRules extends Module
                         break;
                     case ShippingRulesClass::RULE_TYPE_DISABLE:
                         $params['shipping_cost'] = false;
+                        break;
+                    case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
+                        $params['shipping_cost'] = $shipping_rule['value'];
                         break;
                 }
             }
@@ -196,5 +210,14 @@ class ShippingRules extends Module
     public function getContent()
     {
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminShippingRules'));
+    }
+
+    public static function getCleanedPostcodeList($postcode_list): array
+    {
+        $postcode_list = explode(',', $postcode_list);
+        $postcode_list = array_map('trim', $postcode_list);
+        $postcode_list = array_filter($postcode_list);
+
+        return array_unique($postcode_list);
     }
 }

@@ -167,6 +167,8 @@ class AdminShippingRulesController extends ModuleAdminController
                 return $this->l('Additional cost (percent)');
             case ShippingRulesClass::RULE_TYPE_DISABLE:
                 return $this->l('Disable carrier');
+            case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
+                return $this->l('New amount');
         }
     }
 
@@ -226,6 +228,12 @@ class AdminShippingRulesController extends ModuleAdminController
                     ],
                 ],
                 [
+                    'type' => 'textarea',
+                    'name' => 'postcode_list',
+                    'label' => $this->l('Postcode list'),
+                    'desc' => $this->l('List of postcodes separated by commas. Leave empty to apply to all postcodes.'),
+                ],
+                [
                     'type' => 'separator',
                     'col' => 12,
                     'name' => '',
@@ -239,6 +247,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'options' => [
                         'query' => [
                             ['id' => ShippingRulesClass::RULE_TYPE_FREE, 'name' => $this->l('Free shipping')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_SET_AMOUNT, 'name' => $this->l('New amount')],
                             ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost (amount)')],
                             ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT, 'name' => $this->l('Additional cost (percent)')],
                             ['id' => ShippingRulesClass::RULE_TYPE_DISABLE, 'name' => $this->l('Disable carrier')],
@@ -246,6 +255,14 @@ class AdminShippingRulesController extends ModuleAdminController
                         'id' => 'id',
                         'name' => 'name',
                     ],
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('New amount'),
+                    'name' => 'new_amount',
+                    'maxlength' => 10,
+                    'suffix' => $this->context->currency->getSign('right') . ' ' . $this->l('(tax excl.)'),
+                    'required' => true,
                 ],
                 [
                     'type' => 'text',
@@ -281,6 +298,16 @@ class AdminShippingRulesController extends ModuleAdminController
                         'id' => 'id_group',
                         'name' => 'name',
                     ],
+                ],
+                [
+                    'type' => 'hidden',
+                    'name' => 'id_customer',
+                ],
+                [
+                    'type' => 'text',
+                    'name' => 'customer_filter',
+                    'label' => $this->l('Limit to one customer'),
+                    'required' => true,
                 ],
                 [
                     'type' => 'amount_taxes',
@@ -358,6 +385,26 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->fields_value['maximum_amount_tax'] = $this->object->maximum_amount_tax;
         $this->fields_value['maximum_amount_currency'] = $this->object->maximum_amount_currency;
 
+        $this->fields_value['impact_amount'] = $this->fields_value['impact_percent'] = $this->fields_value['new_amount'] = 0;
+        switch ($this->object->rule_type) {
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+                $this->fields_value['impact_amount'] = $this->object->value;
+                break;
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+                $this->fields_value['impact_percent'] = $this->object->value;
+                break;
+            case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
+                $this->fields_value['new_amount'] = $this->object->value;
+                break;
+        }
+
+        $this->fields_value['customer_filter'] = '';
+        if (Validate::isUnsignedId($this->object->id_customer)
+            && Validate::isLoadedObject($customer = new Customer($this->object->id_customer))
+        ) {
+            $this->fields_value['customer_filter'] = $customer->firstname . ' ' . $customer->lastname . ' (' . $customer->email . ')';
+        }
+
         if (Shop::isFeatureActive()) {
             $this->fields_form['input'][] = [
                 'type' => 'shop',
@@ -391,7 +438,59 @@ class AdminShippingRulesController extends ModuleAdminController
             $this->errors[] = $this->l('The minimum amount currency must be equal to the maximum amount currency.');
         }
 
-        return parent::_childValidation();
+        switch (Tools::getValue('rule_type')) {
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+                if (Tools::getValue('impact_amount') <= 0 || !Validate::isPrice(Tools::getValue('impact_amount'))) {
+                    $this->errors[] = $this->l('The impact amount is incorrect.');
+                }
+                break;
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+                if (Tools::getValue('impact_percent') <= 0 || !Validate::isPercentage(Tools::getValue('impact_percent'))) {
+                    $this->errors[] = $this->l('The impact percent is incorrect.');
+                }
+                break;
+            case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
+                if (Tools::getValue('new_amount') <= 0 || !Validate::isPrice(Tools::getValue('new_amount'))) {
+                    $this->errors[] = $this->l('The new amount is incorrect.');
+                }
+                break;
+        }
+
+        if ((int) Tools::getValue('id_zone') && (int) Tools::getValue('id_country')) {
+            $postcode_list = ShippingRules::getCleanedPostcodeList(Tools::getValue('postcode_list'));
+            foreach ($postcode_list as $postcode) {
+                if (!Validate::isPostCode($postcode)) {
+                    $this->errors[] = sprintf(
+                        $this->l('The postcode %s is incorrect.'),
+                        $postcode
+                    );
+                    break;
+                }
+            }
+        }
+    }
+
+    public function copyFromPost(&$object, $table)
+    {
+        parent::copyFromPost($object, $table);
+        $object->value = 0;
+        switch (Tools::getValue('rule_type')) {
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+                $object->value = (float) Tools::getValue('impact_amount');
+                break;
+            case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+                $object->value = (float) Tools::getValue('impact_percent');
+                break;
+            case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
+                $object->value = (float) Tools::getValue('new_amount');
+                break;
+        }
+
+        if ((int) $object->id_zone && (int) $object->id_country) {
+            $object->postcode_list = implode(',', ShippingRules::getCleanedPostcodeList(Tools::getValue('postcode_list')));
+        } else {
+            $object->postcode_list = '';
+        }
     }
 
     public function setMedia($isNewTheme = false)
@@ -399,5 +498,9 @@ class AdminShippingRulesController extends ModuleAdminController
         parent::setMedia($isNewTheme);
         $this->addJS(__DIR__ . '/../../views/js/admin.js');
         $this->addCSS(__DIR__ . '/../../views/css/admin.css');
+        $this->addJqueryPlugin('autocomplete');
+        Media::addJsDef([
+            'adminCartRulesToken' => Tools::getAdminTokenLite('AdminCartRules'),
+        ]);
     }
 }
