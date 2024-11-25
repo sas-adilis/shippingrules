@@ -24,6 +24,7 @@ class ShippingRules extends Module
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
         $this->ps_versions_compliancy = ['min' => '1.6', 'max' => _PS_VERSION_];
+        $this->module_key = '200007ae5a749e9922e27bee45ff215c';
 
         parent::__construct();
     }
