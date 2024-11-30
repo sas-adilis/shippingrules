@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.4';
+        $this->version = '1.1.5';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -136,7 +136,8 @@ class ShippingRules extends Module
             return;
         }
 
-        $groups = $this->context->customer->getGroups();
+
+        $groups = Validate::isLoadedObject($this->context->customer) ? $this->context->customer->getGroups() : [];
         $groups[] = 0;
         sort($groups);
 
@@ -152,7 +153,11 @@ class ShippingRules extends Module
             $query->where('id_zone IN (' . (int) $id_zone . ', 0)');
             $query->where('id_country IN (' . (int) $id_country . ', 0)');
             $query->where('id_group IN (' . implode(',', array_map('intval', $groups)) . ')');
-            $query->where('id_customer IN (0, ' . (int) $this->context->customer->id . ')');
+            if (Validate::isLoadedObject($this->context->customer)) {
+                $query->where('id_customer IN (0, ' . (int) $this->context->customer->id . ')');
+            } else {
+                $query->where('id_customer = 0');
+            }
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
             $query->where('`to` >= NOW()');
