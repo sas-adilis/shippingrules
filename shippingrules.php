@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.5';
+        $this->version = '1.1.6';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -161,6 +161,8 @@ class ShippingRules extends Module
             $query->where('active = 1');
             $query->where('`from` <= NOW()');
             $query->where('`to` >= NOW()');
+            $query->orderBy('position ASC');
+
             $shipping_rules = Db::getInstance()->executeS($query->build());
             Cache::store($cache_id, $shipping_rules);
         }
@@ -194,9 +196,20 @@ class ShippingRules extends Module
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
                         $params['shipping_cost'] += $shipping_rule['value'];
                         break;
+                    case ShippingRulesClass::RULE_TYPE_REDUCTION:
+                        $params['shipping_cost'] -= $shipping_rule['value'];
+                        if ($params['shipping_cost'] < 0) {
+                            $params['shipping_cost'] = 0;
+                        }
+                        break;
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
                         if ($params['shipping_cost'] > 0) {
                             $params['shipping_cost'] += $params['shipping_cost'] * $shipping_rule['value'] / 100;
+                        }
+                        break;
+                    case ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT:
+                        if ($params['shipping_cost'] > 0) {
+                            $params['shipping_cost'] -= $params['shipping_cost'] * $shipping_rule['value'] / 100;
                         }
                         break;
                     case ShippingRulesClass::RULE_TYPE_FREE:
@@ -210,6 +223,8 @@ class ShippingRules extends Module
                         break;
                 }
             }
+
+            break; // Only apply the first matching rule
         }
     }
 

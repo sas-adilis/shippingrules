@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = [];
+$_MODULE = array();
 $_MODULE['<{shippingrules}prestashop>shippingrules_377b0d6128b2de705e0c044e6617c91c'] = 'Règles de frais de transports ';
 $_MODULE['<{shippingrules}prestashop>shippingrules_91a58b385ad70a9a07dd0731539cbc30'] = 'Créez des règles de frais de transports basées sur le pays, la zone, le montant, la date et le transporteur.';
 $_MODULE['<{shippingrules}prestashop>shippingrules_01da36bdc7136ee63b0c6ff9689576c6'] = 'Êtes-vous sûr ?';
@@ -15,6 +15,7 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_f3e1e8a2fbc906
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_4f890cf6a72112cad95093baecf39831'] = 'Désactiver le transporteur';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_0558dcc45dad1cfe3d4e55ca16bfbb12'] = 'Démarrage';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_87557f11575c0ad78e4e28abedc13b6e'] = 'Fin';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_502996d9790340c5fd7b86a5b93b1c9f'] = 'Priorité';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_4d3d769b812b6faa6b76e1a8abaece2d'] = 'Actif';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_ee46f0a6b2a197ccbd4283fcfba96b7f'] = 'Tous les transporteurs';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_c3987e4cac14a8456515f0d200da04ee'] = 'Tous les pays';
@@ -26,6 +27,8 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_40fe41d779889b
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_22905df7482b81a4338d929e7c66add2'] = 'Liste de codes postaux';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5ca5b369b86bcf8ade0c83cc17664457'] = 'Liste de codes postaux séparés par des virgules. Laisser vide pour appliquer à tous les codes postaux.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_004bf6c9a40003140292e97330236c53'] = 'Action';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_8613c3f5ba98698816cd3bfd077fb83c'] = 'Réduction du coût (montant)';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_0ce9ed02c45ade182d0ba1a46d42d715'] = 'Réduction du coût (pourcentage)';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_21034ae6d01a83e702839a72ba8a77b0'] = '(HT)';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_ad4d9ebe568d836d4e5b59a61a79848f'] = 'Montant de l\'impact';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_125d5bff4e0f63870022a5b00f4d0f70'] = 'Pourcentage de l\'impact';

@@ -10,6 +10,9 @@ if (!defined('_PS_VERSION_')) {
 
 class AdminShippingRulesController extends ModuleAdminController
 {
+
+    protected $position_identifier = 'id_shipping_rule';
+
     public function __construct()
     {
         require_once __DIR__ . '/../../classes/ShippingRulesClass.php';
@@ -19,6 +22,8 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->primary_key = 'id_shipping_rule';
         $this->list_id = 'shipping_rule';
         $this->bootstrap = true;
+        $this->_defaultOrderBy = 'position';
+        $this->_defaultOrderWay = 'ASC';
 
         $this->addRowAction('edit');
         $this->addRowAction('delete');
@@ -116,6 +121,13 @@ class AdminShippingRulesController extends ModuleAdminController
                 'title' => $this->l('End'),
                 'align' => 'right',
                 'type' => 'datetime',
+            ],
+            'position' => [
+                'title' => $this->l('Priority'),
+                'filter_key' => 'a!position',
+                'align' => 'center',
+                'class' => 'fixed-width-xs',
+                'position' => 'position',
             ],
             'active' => [
                 'title' => $this->l('Active'),
@@ -250,6 +262,8 @@ class AdminShippingRulesController extends ModuleAdminController
                             ['id' => ShippingRulesClass::RULE_TYPE_SET_AMOUNT, 'name' => $this->l('New amount')],
                             ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL, 'name' => $this->l('Additional cost (amount)')],
                             ['id' => ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT, 'name' => $this->l('Additional cost (percent)')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_REDUCTION, 'name' => $this->l('Cost reduction (amount)')],
+                            ['id' => ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT, 'name' => $this->l('Cost reduction (percent)')],
                             ['id' => ShippingRulesClass::RULE_TYPE_DISABLE, 'name' => $this->l('Disable carrier')],
                         ],
                         'id' => 'id',
@@ -502,5 +516,40 @@ class AdminShippingRulesController extends ModuleAdminController
         Media::addJsDef([
             'adminCartRulesToken' => Tools::getAdminTokenLite('AdminCartRules'),
         ]);
+    }
+
+    public function ajaxProcessUpdatePositions()
+    {
+        if ($this->access('edit')) {
+            $way = (bool) Tools::getValue('way');
+            $id_shipping_rule = (int) Tools::getValue('id');
+            $positions = Tools::getValue('shipping_rule');
+
+            $new_positions = [];
+            foreach ($positions as $v) {
+                if (!empty($v)) {
+                    $new_positions[] = $v;
+                }
+            }
+
+            foreach ($new_positions as $position => $value) {
+                $pos = explode('_', $value);
+
+                if (isset($pos[2]) && (int) $pos[2] === $id_shipping_rule) {
+                    $shipping_rule = new ShippingRulesClass((int) $pos[2]);
+                    if (Validate::isLoadedObject($shipping_rule)) {
+                        if ($shipping_rule->updatePosition($way, $position, $id_shipping_rule)) {
+                            echo 'ok position ' . (int) $position . ' for feature ' . (int) $pos[1] . '\r\n';
+                        } else {
+                            echo '{"hasError" : true, "errors" : "Can not update feature ' . (int) $id_shipping_rule . ' to position ' . (int) $position . ' "}';
+                        }
+                    } else {
+                        echo '{"hasError" : true, "errors" : "This feature (' . (int) $id_shipping_rule . ') can t be loaded"}';
+                    }
+
+                    break;
+                }
+            }
+        }
     }
 }
