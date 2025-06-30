@@ -10,7 +10,6 @@ if (!defined('_PS_VERSION_')) {
 
 class AdminShippingRulesController extends ModuleAdminController
 {
-
     protected $position_identifier = 'id_shipping_rule';
 
     public function __construct()

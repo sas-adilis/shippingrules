@@ -1,7 +1,6 @@
 <?php
-
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{shippingrules}prestashop>shippingrules_377b0d6128b2de705e0c044e6617c91c'] = 'Règles de frais de transports ';
 $_MODULE['<{shippingrules}prestashop>shippingrules_91a58b385ad70a9a07dd0731539cbc30'] = 'Créez des règles de frais de transports basées sur le pays, la zone, le montant, la date et le transporteur.';
 $_MODULE['<{shippingrules}prestashop>shippingrules_01da36bdc7136ee63b0c6ff9689576c6'] = 'Êtes-vous sûr ?';

@@ -19,8 +19,8 @@ function upgrade_module_1_1_6()
         if ($rules) {
             $i = 0;
             foreach ($rules as $rule) {
-                $queries[] = 'UPDATE `' . _DB_PREFIX_ . 'shipping_rule` SET position = ' . $i . ' WHERE id_shipping_rule = ' . (int)$rule['id_shipping_rule']. ' LIMIT 1;';
-                $i++;
+                $queries[] = 'UPDATE `' . _DB_PREFIX_ . 'shipping_rule` SET position = ' . $i . ' WHERE id_shipping_rule = ' . (int) $rule['id_shipping_rule'] . ' LIMIT 1;';
+                ++$i;
             }
         }
 

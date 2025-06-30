@@ -1,5 +1,4 @@
 <?php
-
 ini_set('memory_limit','256M');
 
 $finder = PhpCsFixer\Finder::create()->in([
@@ -47,6 +46,9 @@ return (new PhpCsFixer\Config())
                 'method',
                 'property',
             ],
+        ],
+        'nullable_type_declaration_for_default_null_value' => [
+            'use_nullable_type_declaration' => false
         ],
     ])
     ->setFinder($finder)

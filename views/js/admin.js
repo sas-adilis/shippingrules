@@ -39,14 +39,14 @@ $(function () {
 
     function toggleValueField() {
         const value = parseInt($(this).val()) || 0;
-        if (value === 1) {
+        if (value === 1 || value === 7) {
             $impactAmountInput.closest('.form-group').show();
         } else {
             $impactAmountInput.closest('.form-group').hide();
             $impactAmountInput.val(0);
         }
 
-        if (value === 3) {
+        if (value === 3 || value === 6) {
             $impactPercentInput.closest('.form-group').show();
         } else {
             $impactPercentInput.closest('.form-group').hide();

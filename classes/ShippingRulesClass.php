@@ -18,7 +18,6 @@ class ShippingRulesClass extends ObjectModel
     const RULE_TYPE_REDUCTION_PERCENT = 6;
     const RULE_TYPE_REDUCTION = 7;
 
-
     public $id_carrier;
     public $id_zone;
     public $id_country;
@@ -89,9 +88,9 @@ class ShippingRulesClass extends ObjectModel
     {
         $return = parent::delete();
         $this->cleanPositions();
+
         return $return;
     }
-
 
     public static function getHigherPosition()
     {
@@ -141,7 +140,7 @@ class ShippingRulesClass extends ObjectModel
 			' . ($way
                     ? '> ' . (int) $moved_shipping_rule['position'] . ' AND `position` <= ' . (int) $position
                     : '< ' . (int) $moved_shipping_rule['position'] . ' AND `position` >= ' . (int) $position)
-            ) && Db::getInstance()->execute('
+        ) && Db::getInstance()->execute('
 			UPDATE `' . _DB_PREFIX_ . 'shipping_rule`
 			SET `position` = ' . (int) $position . '
 			WHERE `id_shipping_rule`=' . (int) $moved_shipping_rule['id_shipping_rule']);
