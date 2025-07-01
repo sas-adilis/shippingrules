@@ -489,9 +489,11 @@ class AdminShippingRulesController extends ModuleAdminController
         $object->value = 0;
         switch (Tools::getValue('rule_type')) {
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION:
                 $object->value = (float) Tools::getValue('impact_amount');
                 break;
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT:
                 $object->value = (float) Tools::getValue('impact_percent');
                 break;
             case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
