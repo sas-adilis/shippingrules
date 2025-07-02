@@ -106,6 +106,8 @@ class AdminShippingRulesController extends ModuleAdminController
                     ShippingRulesClass::RULE_TYPE_FREE => $this->l('Free shipping'),
                     ShippingRulesClass::RULE_TYPE_ADDITIONAL => $this->l('Additional cost (amount)'),
                     ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT => $this->l('Additional cost (percent)'),
+                    ShippingRulesClass::RULE_TYPE_REDUCTION => $this->l('Cost reduction (amount)'),
+                    ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT => $this->l('Cost reduction (percent)'),
                     ShippingRulesClass::RULE_TYPE_DISABLE => $this->l('Disable carrier'),
                 ],
                 'filter_key' => 'a!rule_type',
@@ -176,6 +178,10 @@ class AdminShippingRulesController extends ModuleAdminController
                 return $this->l('Additional cost (amount)');
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
                 return $this->l('Additional cost (percent)');
+            case ShippingRulesClass::RULE_TYPE_REDUCTION:
+                return $this->l('Cost reduction (amount)');
+            case ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT:
+                return $this->l('Cost reduction (percent)');
             case ShippingRulesClass::RULE_TYPE_DISABLE:
                 return $this->l('Disable carrier');
             case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
@@ -401,9 +407,11 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->fields_value['impact_amount'] = $this->fields_value['impact_percent'] = $this->fields_value['new_amount'] = 0;
         switch ($this->object->rule_type) {
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION:
                 $this->fields_value['impact_amount'] = $this->object->value;
                 break;
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT:
                 $this->fields_value['impact_percent'] = $this->object->value;
                 break;
             case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
@@ -453,11 +461,13 @@ class AdminShippingRulesController extends ModuleAdminController
 
         switch (Tools::getValue('rule_type')) {
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION:
                 if (Tools::getValue('impact_amount') <= 0 || !Validate::isPrice(Tools::getValue('impact_amount'))) {
                     $this->errors[] = $this->l('The impact amount is incorrect.');
                 }
                 break;
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT:
+            case ShippingRulesClass::RULE_TYPE_REDUCTION_PERCENT:
                 if (Tools::getValue('impact_percent') <= 0 || !Validate::isPercentage(Tools::getValue('impact_percent'))) {
                     $this->errors[] = $this->l('The impact percent is incorrect.');
                 }
