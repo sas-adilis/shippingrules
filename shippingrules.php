@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.9';
+        $this->version = '1.2.0';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -221,9 +221,10 @@ class ShippingRules extends Module
                         $params['shipping_cost'] = $shipping_rule['value'];
                         break;
                 }
+
+                break; // Only apply the first matching rule
             }
 
-            break; // Only apply the first matching rule
         }
     }
 
