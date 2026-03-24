@@ -82,8 +82,12 @@ jobs:
           TAG="v${{ steps.version.outputs.VERSION }}"
           ARCHIVE="${MODULE_NAME}-${TAG}.zip"
 
-          zip -r "/tmp/${ARCHIVE}" . \
-            --exclude "*.git*" \
+          # Copier dans un dossier au bon nom pour que le zip contienne MODULE_NAME/
+          mkdir -p "/tmp/zipbuild/${MODULE_NAME}"
+          cp -r . "/tmp/zipbuild/${MODULE_NAME}/"
+
+          cd /tmp/zipbuild
+          zip -r "/tmp/${ARCHIVE}" "${MODULE_NAME}" \
             --exclude "*/.git/*" \
             --exclude "*/.github/*" \
             --exclude "*/_dev/*" \
