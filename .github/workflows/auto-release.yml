@@ -1,0 +1,115 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # ── 1. Checkout complet (fetch-depth 0 pour avoir tous les commits) ──
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. Lire la version dans le fichier PHP principal ──
+      - name: Read module version
+        id: version
+        run: |
+          MODULE_FILE="$(basename "${{ github.repository }}").php"
+          echo "Fichier détecté : $MODULE_FILE"
+
+          VERSION=$(grep -oP "\\\$this->version\s*=\s*'\K[^']+" "$MODULE_FILE" | head -1)
+
+          if [ -z "$VERSION" ]; then
+            echo "❌ Version introuvable dans $MODULE_FILE"
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Version trouvée : $VERSION"
+
+      # ── 3. Vérifier si la release existe déjà ──
+      - name: Check existing release
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.version.outputs.VERSION }}"
+
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "RELEASE_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "ℹ️ Release $TAG existe déjà → rien à faire"
+          else
+            echo "RELEASE_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "🆕 Release $TAG à créer"
+          fi
+
+      # ── 4. Construire les release notes (commits depuis le dernier tag) ──
+      - name: Build release notes
+        id: notes
+        if: steps.check.outputs.RELEASE_EXISTS == 'false'
+        run: |
+          LAST_TAG=$(git tag --sort=-creatordate | head -1)
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" "${LAST_TAG}..HEAD")
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Aucun commit depuis la dernière release"
+          fi
+
+          echo "$COMMITS" > /tmp/release_notes.md
+          echo "Aperçu des notes :"
+          cat /tmp/release_notes.md
+
+      # ── 5. Créer l'archive ZIP en excluant les fichiers inutiles ──
+
+      - name: Build ZIP archive
+        if: steps.check.outputs.RELEASE_EXISTS == 'false'
+        run: |
+          MODULE_NAME=$(basename "${{ github.repository }}")
+          TAG="v${{ steps.version.outputs.VERSION }}"
+          ARCHIVE="${MODULE_NAME}-${TAG}.zip"
+
+          zip -r "/tmp/${ARCHIVE}" . \
+            --exclude "*.git*" \
+            --exclude "*/.git/*" \
+            --exclude "*/.github/*" \
+            --exclude "*/_dev/*" \
+            --exclude "*/node_modules/*" \
+            --exclude "*/.DS_Store" \
+            --exclude "*/.gitignore" \
+            --exclude "*/.php-cs-fixer.dist.php" \
+            --exclude "*/composer.json" \
+            --exclude "*/composer.lock" \
+            --exclude "*/Makefile" \
+            --exclude "*.scss"
+
+          echo "ARCHIVE_PATH=/tmp/${ARCHIVE}" >> $GITHUB_ENV
+          echo "✅ Archive créée : /tmp/${ARCHIVE}"
+
+      # ── 6. Créer la release GitHub avec l'archive ──
+      - name: Create GitHub Release
+        if: steps.check.outputs.RELEASE_EXISTS == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.version.outputs.VERSION }}"
+
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes-file /tmp/release_notes.md \
+            "${{ env.ARCHIVE_PATH }}"
+
+          echo "🎉 Release $TAG publiée avec succès !"
