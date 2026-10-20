@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.2.7';
+        $this->version = '1.2.8';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -118,7 +118,7 @@ class ShippingRules extends Module
             $address_id = (int) $cart->id_address_invoice;
         } elseif (count($address_products)) {
             $prod = current($address_products);
-            $address_id = (int) $prod['id_address_delivery'];
+            $address_id = (int) (isset($prod['id_address_delivery']) ? $prod['id_address_delivery'] : $cart->id_address_delivery);
         }
 
         $address = null;
