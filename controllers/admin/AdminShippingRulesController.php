@@ -535,6 +535,9 @@ class AdminShippingRulesController extends ModuleAdminController
             $way = (bool) Tools::getValue('way');
             $id_shipping_rule = (int) Tools::getValue('id');
             $positions = Tools::getValue('shipping_rule');
+            if (!is_array($positions)) {
+                $positions = [];
+            }
 
             $new_positions = [];
             foreach ($positions as $v) {

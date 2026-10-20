@@ -18,23 +18,21 @@ class ShippingRulesClass extends ObjectModel
     const RULE_TYPE_REDUCTION_PERCENT = 6;
     const RULE_TYPE_REDUCTION = 7;
 
-    public $id_carrier;
-    public $id_zone;
-    public $id_country;
-    public $id_group;
-    public $id_customer;
+    public $id_carrier = 0;
+    public $id_zone = 0;
+    public $id_country = 0;
+    public $id_group = 0;
+    public $id_customer = 0;
     public $postcode_list;
     public $minimum_amount = 0;
-    public $minimum_amount_currency;
+    public $minimum_amount_currency = 0;
     public $minimum_amount_tax = 0;
     public $maximum_amount = 9999;
-    public $maximum_amount_currency;
+    public $maximum_amount_currency = 0;
     public $maximum_amount_tax = 0;
     public $minimum_weight = 0;
     public $maximum_weight = 9999;
-    public $impact_amount = 0;
-    public $impact_percent = 0;
-    public $new_amount = 0;
+    public $value = 0;
     public $rule_type = self::RULE_TYPE_FREE;
     public $from;
     public $to;
@@ -58,10 +56,10 @@ class ShippingRulesClass extends ObjectModel
             'maximum_amount' => ['type' => self::TYPE_FLOAT, 'validate' => 'isPrice', 'required' => true],
             'maximum_amount_tax' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
             'maximum_amount_currency' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId'],
-            'value' => ['type' => self::TYPE_FLOAT, 'required' => true],
+            'value' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
             'minimum_weight' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
             'maximum_weight' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
-            'rule_type' => ['type' => self::TYPE_STRING, 'size' => 10],
+            'rule_type' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true],
             'from' => ['type' => self::TYPE_DATE, 'validate' => 'isDateFormat', 'required' => true],
             'to' => ['type' => self::TYPE_DATE, 'validate' => 'isDateFormat', 'required' => true],
             'active' => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedInt'],

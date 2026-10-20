@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.2.3';
+        $this->version = '1.2.4';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -32,7 +32,10 @@ class ShippingRules extends Module
     public function install()
     {
         if (file_exists($this->getLocalPath() . 'sql/install.php')) {
-            require_once $this->getLocalPath() . 'sql/install.php';
+            $sql_result = require_once $this->getLocalPath() . 'sql/install.php';
+            if ($sql_result === false) {
+                return false;
+            }
         }
 
         return
@@ -100,30 +103,40 @@ class ShippingRules extends Module
 
         /** @var Cart $cart */
         $cart = $params['cart'];
-        $id_carrier = $params['id_carrier'];
-        $product_list = $cart->getProducts();
-
-        // Address
-        if (Configuration::get('PS_TAX_ADDRESS_TYPE') == 'id_address_invoice') {
-            $address_id = (int) $cart->id_address_invoice;
-        } elseif (count($product_list)) {
-            $prod = current($product_list);
-            $address_id = (int) $prod['id_address_delivery'];
-        } else {
-            $address_id = null;
+        if ($cart->isVirtualCart()) {
+            return;
         }
 
-        if (!Address::addressExists($address_id)) {
+        $id_carrier = $params['id_carrier'];
+        $use_tax = !empty($params['use_tax']);
+        $product_list = !empty($params['product_list']) && is_array($params['product_list']) ? $params['product_list'] : null;
+        $address_products = $product_list === null ? $cart->getProducts() : $product_list;
+
+        // Address
+        $address_id = 0;
+        if (Configuration::get('PS_TAX_ADDRESS_TYPE') == 'id_address_invoice') {
+            $address_id = (int) $cart->id_address_invoice;
+        } elseif (count($address_products)) {
+            $prod = current($address_products);
+            $address_id = (int) $prod['id_address_delivery'];
+        }
+
+        $address = null;
+        if ($address_id && Address::addressExists($address_id)) {
+            $address = Address::initialize($address_id, true);
+            $id_country = (int) $address->id_country;
+            $id_zone = (int) Address::getZoneById((int) $address->id);
+        } else {
             $country = $params['default_country'];
             if (!$country) {
                 $country = Context::getContext()->country;
             }
-            $id_country = $country->id;
-            $id_zone = $country->id_zone;
-        } else {
-            $address = Address::initialize($address_id, true);
-            $id_country = $address->id_country;
-            $id_zone = Address::getZoneById((int) $address->id);
+            $id_country = (int) $country->id;
+            $id_zone = (int) $country->id_zone;
+        }
+
+        if (!empty($params['id_zone'])) {
+            $id_zone = (int) $params['id_zone'];
         }
 
         // Carrier
@@ -136,43 +149,58 @@ class ShippingRules extends Module
             return;
         }
 
-        $groups = Validate::isLoadedObject($this->context->customer) ? $this->context->customer->getGroups() : [];
+        $has_customer = Validate::isLoadedObject($this->context->customer);
+        $id_customer = $has_customer ? (int) $this->context->customer->id : 0;
+        $id_shop = (int) $this->context->shop->id;
+
+        $groups = $has_customer ? $this->context->customer->getGroups() : [];
         $groups[] = 0;
+        $groups = array_map('intval', $groups);
         sort($groups);
 
-        $cache_id = 'ShippingRules::hookActionGetPackageShippingCost_' . (int) $id_country . '_' . (int) $id_zone;
-        $cache_id .= '_' . implode('_', $groups);
+        $cache_id = 'ShippingRules::hookActionGetPackageShippingCost_' . $id_country . '_' . $id_zone;
+        $cache_id .= '_' . $id_shop . '_' . $id_customer . '_' . implode('_', $groups);
 
         if (Cache::isStored($cache_id)) {
             $shipping_rules = Cache::retrieve($cache_id);
         } else {
             $query = new DbQuery();
-            $query->select('*');
-            $query->from('shipping_rule');
-            $query->where('id_zone IN (' . (int) $id_zone . ', 0)');
-            $query->where('id_country IN (' . (int) $id_country . ', 0)');
-            $query->where('id_group IN (' . implode(',', array_map('intval', $groups)) . ')');
-            if (Validate::isLoadedObject($this->context->customer)) {
-                $query->where('id_customer IN (0, ' . (int) $this->context->customer->id . ')');
-            } else {
-                $query->where('id_customer = 0');
+            $query->select('sr.*');
+            $query->from('shipping_rule', 'sr');
+            if (Shop::isFeatureActive()) {
+                $query->innerJoin('shipping_rule_shop', 'srs', 'srs.id_shipping_rule = sr.id_shipping_rule AND srs.id_shop = ' . $id_shop);
             }
-            $query->where('active = 1');
-            $query->where('`from` <= NOW()');
-            $query->where('`to` >= NOW()');
-            $query->orderBy('position ASC');
+            $query->where('sr.id_zone IN (' . $id_zone . ', 0)');
+            $query->where('sr.id_country IN (' . $id_country . ', 0)');
+            $query->where('sr.id_group IN (' . implode(',', $groups) . ')');
+            $query->where('sr.id_customer IN (0, ' . $id_customer . ')');
+            $query->where('sr.active = 1');
+            $query->where('sr.`from` <= NOW()');
+            $query->where('sr.`to` >= NOW()');
+            $query->orderBy('sr.position ASC');
 
             $shipping_rules = Db::getInstance()->executeS($query->build());
             Cache::store($cache_id, $shipping_rules);
         }
 
-        $cart_amount_tax_excl = $cart->getOrderTotal(false, Cart::ONLY_PRODUCTS);
-        $cart_amount_tax_incl = $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
-        $cart_weight = $cart->getTotalWeight();
+        if (empty($shipping_rules)) {
+            return;
+        }
+
+        // Package amounts and weight (cart currency)
+        $cart_currency = Currency::getCurrencyInstance((int) $cart->id_currency);
+        $cart_amount_tax_excl = $cart->getOrderTotal(false, Cart::ONLY_PRODUCTS, $product_list);
+        $cart_amount_tax_incl = $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS, $product_list);
+        $cart_weight = (float) $cart->getTotalWeight($product_list);
 
         foreach ($shipping_rules as $shipping_rule) {
             $cart_amount_tax = $shipping_rule['minimum_amount_tax'] ? $cart_amount_tax_incl : $cart_amount_tax_excl;
-            $cart_amount_tax = Tools::convertPrice($cart_amount_tax, $shipping_rule['minimum_amount_currency']);
+            if ((int) $shipping_rule['minimum_amount_currency']) {
+                $rule_currency = Currency::getCurrencyInstance((int) $shipping_rule['minimum_amount_currency']);
+                if (Validate::isLoadedObject($rule_currency)) {
+                    $cart_amount_tax = Tools::convertPriceFull($cart_amount_tax, $cart_currency, $rule_currency);
+                }
+            }
 
             if (
                 ($shipping_rule['id_carrier'] == $carrier->id_reference || $shipping_rule['id_carrier'] == 0)
@@ -183,20 +211,17 @@ class ShippingRules extends Module
             ) {
                 if (!empty($shipping_rule['postcode_list'])) {
                     $postcode_list = self::getCleanedPostcodeList($shipping_rule['postcode_list']);
-                    if (!isset($address) || !Validate::isLoadedObject($address)) {
-                        $address = new Address($address_id);
-                    }
-                    if (!in_array($address->postcode, $postcode_list)) {
+                    if (!$address || !in_array($address->postcode, $postcode_list)) {
                         continue;
                     }
                 }
 
-                switch ($shipping_rule['rule_type']) {
+                switch ((int) $shipping_rule['rule_type']) {
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
-                        $params['shipping_cost'] += $shipping_rule['value'];
+                        $params['shipping_cost'] += $this->getFixedAmount($shipping_rule['value'], $cart, $cart_currency, $carrier, $use_tax, $address);
                         break;
                     case ShippingRulesClass::RULE_TYPE_REDUCTION:
-                        $params['shipping_cost'] -= $shipping_rule['value'];
+                        $params['shipping_cost'] -= $this->getFixedAmount($shipping_rule['value'], $cart, $cart_currency, $carrier, $use_tax, $address);
                         if ($params['shipping_cost'] < 0) {
                             $params['shipping_cost'] = 0;
                         }
@@ -218,14 +243,38 @@ class ShippingRules extends Module
                         $params['shipping_cost'] = false;
                         break;
                     case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
-                        $params['shipping_cost'] = $shipping_rule['value'];
+                        $params['shipping_cost'] = $this->getFixedAmount($shipping_rule['value'], $cart, $cart_currency, $carrier, $use_tax, $address);
                         break;
+                }
+
+                if ($params['shipping_cost'] !== false) {
+                    $params['shipping_cost'] = (float) Tools::ps_round((float) $params['shipping_cost'], Context::getContext()->getComputingPrecision());
                 }
 
                 break; // Only apply the first matching rule
             }
-
         }
+    }
+
+    /**
+     * Converts a rule amount (shop default currency, tax excl.) to the cart currency, with the carrier taxes if required.
+     *
+     * @param float|string $value
+     * @param Address|null $address
+     */
+    private function getFixedAmount($value, Cart $cart, Currency $cart_currency, Carrier $carrier, bool $use_tax, $address): float
+    {
+        $amount = (float) Tools::convertPriceFull((float) $value, Currency::getDefaultCurrency(), $cart_currency);
+
+        if ($use_tax && !Tax::excludeTaxeOption()) {
+            if (Configuration::get('PS_ATCP_SHIPWRAP')) {
+                $amount *= 1 + $cart->getAverageProductsTaxRate();
+            } else {
+                $amount *= 1 + $carrier->getTaxesRate($address ?: Address::initialize(null)) / 100;
+            }
+        }
+
+        return $amount;
     }
 
     public function getContent()
@@ -235,7 +284,7 @@ class ShippingRules extends Module
 
     public static function getCleanedPostcodeList($postcode_list): array
     {
-        $postcode_list = explode(',', $postcode_list);
+        $postcode_list = explode(',', (string) $postcode_list);
         $postcode_list = array_map('trim', $postcode_list);
         $postcode_list = array_filter($postcode_list);
 
