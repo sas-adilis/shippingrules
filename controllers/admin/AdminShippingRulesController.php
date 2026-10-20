@@ -29,7 +29,7 @@ class AdminShippingRulesController extends ModuleAdminController
 
         $this->_select = 'co_l.name country_name, ca.name carrier_name, z.name zone_name';
         $this->_join = '
-            LEFT JOIN ' . _DB_PREFIX_ . 'carrier ca ON (ca.id_reference = a.id_carrier AND deleted=0)
+            LEFT JOIN ' . _DB_PREFIX_ . 'carrier ca ON (ca.id_reference = a.id_carrier AND ca.deleted = 0)
             LEFT JOIN ' . _DB_PREFIX_ . 'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang=' . (int) Context::getContext()->cookie->id_lang . ')
             LEFT JOIN ' . _DB_PREFIX_ . 'zone z ON z.id_zone = a.id_zone
 		';
@@ -187,6 +187,8 @@ class AdminShippingRulesController extends ModuleAdminController
             case ShippingRulesClass::RULE_TYPE_SET_AMOUNT:
                 return $this->l('New amount');
         }
+
+        return '';
     }
 
     public function renderForm()
@@ -523,8 +525,8 @@ class AdminShippingRulesController extends ModuleAdminController
     public function setMedia($isNewTheme = false)
     {
         parent::setMedia($isNewTheme);
-        $this->addJS(__DIR__ . '/../../views/js/admin.js');
-        $this->addCSS(__DIR__ . '/../../views/css/admin.css');
+        $this->addJS($this->module->getPathUri() . 'views/js/admin.js');
+        $this->addCSS($this->module->getPathUri() . 'views/css/admin.css');
         $this->addJqueryPlugin('autocomplete');
         Media::addJsDef([
             'adminShippingRulesToken' => $this->token,

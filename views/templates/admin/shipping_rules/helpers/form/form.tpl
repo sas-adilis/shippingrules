@@ -49,8 +49,8 @@
             </div>
             <div class="col-lg-3">
                 <select name="{$input.name|escape:'html':'UTF-8'}_tax">
-                    <option value="0" {if 0 == $selected_tax} selected="selected"{/if}>HT</option>
-                    <option value="1" {if 1 == $selected_tax} selected="selected"{/if}>TTC</option>
+                    <option value="0" {if 0 == $selected_tax} selected="selected"{/if}>{l s='Tax excl.' mod='shippingrules'}</option>
+                    <option value="1" {if 1 == $selected_tax} selected="selected"{/if}>{l s='Tax incl.' mod='shippingrules'}</option>
                 </select>
             </div>
         </div>

@@ -1,6 +1,8 @@
 <?php
 global $_MODULE;
 $_MODULE = [];
+$_MODULE['<{shippingrules}prestashop>form_58ef6750a23ba432fc1377b7de085d9f'] = 'HT';
+$_MODULE['<{shippingrules}prestashop>form_94dfb2009644e42ef41f47aece4c0350'] = 'TTC';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_062f403294aa07bf883812227e54ccd1'] = 'La règle de livraison %d ne peut pas être chargée.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5b578fe33ba4575dca3f752278c6ad17'] = 'Impossible de déplacer la règle de livraison %1$d à la position %2$d.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_1bdd228669c9dd995eb664737e60786e'] = 'Vous n\'avez pas la permission de modifier cet élément.';
