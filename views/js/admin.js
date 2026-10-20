@@ -124,5 +124,11 @@ $(function () {
             $customerIdInput.val(data.id_customer);
             $customerFilterInput.val(`${data.cname} (${data.email})`);
         });
+
+    $customerFilterInput.on('input', () => {
+        if ($customerFilterInput.val().trim() === '') {
+            $customerIdInput.val(0);
+        }
+    });
 });
 

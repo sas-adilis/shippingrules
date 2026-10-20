@@ -360,7 +360,6 @@ class AdminShippingRulesController extends ModuleAdminController
                     'type' => 'text',
                     'name' => 'customer_filter',
                     'label' => $this->l('Limit to one customer'),
-                    'required' => true,
                 ],
                 [
                     'type' => 'amount_taxes',
