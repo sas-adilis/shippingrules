@@ -98,7 +98,7 @@ $(function () {
                 scroll: false,
                 dataType: 'json',
                 formatItem(data, i, max, value, term) {
-                    return value;
+                    return $('<div>').text(value).html();
                 },
                 parse(data) {
                     const mytab = new Array();
@@ -114,9 +114,9 @@ $(function () {
                 },
                 extraParams: {
                     ajax: 1,
-                    controller: 'AdminCartRules',
-                    token: adminCartRulesToken,
-                    customerFilter: 1,
+                    controller: 'AdminShippingRules',
+                    action: 'searchCustomers',
+                    token: adminShippingRulesToken,
                 },
             },
         )

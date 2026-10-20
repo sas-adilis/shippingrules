@@ -27,11 +27,11 @@ class ShippingRulesClass extends ObjectModel
     public $minimum_amount = 0;
     public $minimum_amount_currency = 0;
     public $minimum_amount_tax = 0;
-    public $maximum_amount = 9999;
+    public $maximum_amount = 0;
     public $maximum_amount_currency = 0;
     public $maximum_amount_tax = 0;
     public $minimum_weight = 0;
-    public $maximum_weight = 9999;
+    public $maximum_weight = 0;
     public $value = 0;
     public $rule_type = self::RULE_TYPE_FREE;
     public $from;

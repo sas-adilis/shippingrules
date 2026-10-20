@@ -205,9 +205,9 @@ class ShippingRules extends Module
             if (
                 ($shipping_rule['id_carrier'] == $carrier->id_reference || $shipping_rule['id_carrier'] == 0)
                 && $cart_amount_tax >= $shipping_rule['minimum_amount']
-                && $cart_amount_tax <= $shipping_rule['maximum_amount']
+                && ($shipping_rule['maximum_amount'] <= 0 || $cart_amount_tax <= $shipping_rule['maximum_amount'])
                 && $cart_weight >= $shipping_rule['minimum_weight']
-                && $cart_weight <= $shipping_rule['maximum_weight']
+                && ($shipping_rule['maximum_weight'] <= 0 || $cart_weight <= $shipping_rule['maximum_weight'])
             ) {
                 if (!empty($shipping_rule['postcode_list'])) {
                     $postcode_list = self::getCleanedPostcodeList($shipping_rule['postcode_list']);
@@ -248,7 +248,9 @@ class ShippingRules extends Module
                 }
 
                 if ($params['shipping_cost'] !== false) {
-                    $params['shipping_cost'] = (float) Tools::ps_round((float) $params['shipping_cost'], Context::getContext()->getComputingPrecision());
+                    $context = Context::getContext();
+                    $precision = method_exists($context, 'getComputingPrecision') ? $context->getComputingPrecision() : (int) _PS_PRICE_COMPUTE_PRECISION_;
+                    $params['shipping_cost'] = (float) Tools::ps_round((float) $params['shipping_cost'], $precision);
                 }
 
                 break; // Only apply the first matching rule

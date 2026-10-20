@@ -1,6 +1,10 @@
 <?php
 global $_MODULE;
 $_MODULE = [];
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_062f403294aa07bf883812227e54ccd1'] = 'La règle de livraison %d ne peut pas être chargée.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5b578fe33ba4575dca3f752278c6ad17'] = 'Impossible de déplacer la règle de livraison %1$d à la position %2$d.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_1bdd228669c9dd995eb664737e60786e'] = 'Vous n\'avez pas la permission de modifier cet élément.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_b2891f5776452fb2904070df3604a844'] = 'Laissez 0 pour ne pas limiter.';
 $_MODULE['<{shippingrules}prestashop>shippingrules_377b0d6128b2de705e0c044e6617c91c'] = 'Règles de frais de transports ';
 $_MODULE['<{shippingrules}prestashop>shippingrules_91a58b385ad70a9a07dd0731539cbc30'] = 'Créez des règles de frais de transports basées sur le pays, la zone, le montant, la date et le transporteur.';
 $_MODULE['<{shippingrules}prestashop>shippingrules_01da36bdc7136ee63b0c6ff9689576c6'] = 'Êtes-vous sûr ?';

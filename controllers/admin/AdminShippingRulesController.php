@@ -340,6 +340,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 [
                     'type' => 'amount_taxes',
                     'label' => $this->l('To price'),
+                    'desc' => $this->l('Leave 0 for no limit.'),
                     'name' => 'maximum_amount',
                     'maxlength' => 10,
                     'suffix' => $this->context->currency->getSign('right'),
@@ -358,6 +359,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 [
                     'type' => 'text',
                     'label' => $this->l('To weight'),
+                    'desc' => $this->l('Leave 0 for no limit.'),
                     'name' => 'maximum_weight',
                     'class' => 'fixed-width-md',
                     'maxlength' => 10,
@@ -439,11 +441,11 @@ class AdminShippingRulesController extends ModuleAdminController
 
     public function _childValidation()
     {
-        if (Tools::getValue('minimum_amount') > Tools::getValue('maximum_amount')) {
+        if ((float) Tools::getValue('maximum_amount') > 0 && (float) Tools::getValue('minimum_amount') > (float) Tools::getValue('maximum_amount')) {
             $this->errors[] = $this->l('The minimum amount must be less than the maximum amount.');
         }
 
-        if (Tools::getValue('minimum_weight') > Tools::getValue('maximum_weight')) {
+        if ((float) Tools::getValue('maximum_weight') > 0 && (float) Tools::getValue('minimum_weight') > (float) Tools::getValue('maximum_weight')) {
             $this->errors[] = $this->l('The minimum weight must be less than the maximum weight.');
         }
 
@@ -525,44 +527,92 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->addCSS(__DIR__ . '/../../views/css/admin.css');
         $this->addJqueryPlugin('autocomplete');
         Media::addJsDef([
-            'adminCartRulesToken' => Tools::getAdminTokenLite('AdminCartRules'),
+            'adminShippingRulesToken' => $this->token,
         ]);
+    }
+
+    /**
+     * ajaxRender() only exists since PrestaShop 1.7.6.
+     */
+    protected function renderAjax(string $value): void
+    {
+        if (method_exists($this, 'ajaxRender')) {
+            $this->ajaxRender($value);
+        } else {
+            echo $value;
+        }
+    }
+
+    public function ajaxProcessSearchCustomers()
+    {
+        $customers = [];
+        $search_query = trim((string) Tools::getValue('q'));
+
+        if ($this->access('view') && mb_strlen($search_query) >= 2) {
+            $display_shop_name = Shop::isFeatureActive() && Shop::getContext() != Shop::CONTEXT_SHOP;
+            $customers = Db::getInstance()->executeS('
+                SELECT c.`id_customer`, c.`email`, CONCAT(c.`firstname`, \' \', c.`lastname`) AS cname' .
+                ($display_shop_name ? ', s.`name` AS shop_name' : '') . '
+                FROM `' . _DB_PREFIX_ . 'customer` c' .
+                ($display_shop_name ? ' INNER JOIN `' . _DB_PREFIX_ . 'shop` s ON s.`id_shop` = c.`id_shop`' : '') . '
+                WHERE c.`deleted` = 0 AND c.`is_guest` = 0 AND c.`active` = 1
+                AND (
+                    c.`id_customer` = ' . (int) $search_query . '
+                    OR c.`email` LIKE "%' . pSQL($search_query) . '%"
+                    OR c.`firstname` LIKE "%' . pSQL($search_query) . '%"
+                    OR c.`lastname` LIKE "%' . pSQL($search_query) . '%"
+                )
+                ' . Shop::addSqlRestriction(Shop::SHARE_CUSTOMER, 'c') . '
+                ORDER BY c.`firstname`, c.`lastname`
+                LIMIT 50
+            ');
+        }
+
+        $this->renderAjax(json_encode($customers ?: []));
     }
 
     public function ajaxProcessUpdatePositions()
     {
-        if ($this->access('edit')) {
-            $way = (bool) Tools::getValue('way');
-            $id_shipping_rule = (int) Tools::getValue('id');
-            $positions = Tools::getValue('shipping_rule');
-            if (!is_array($positions)) {
-                $positions = [];
+        if (!$this->access('edit')) {
+            $this->renderAjax(json_encode(['hasError' => true, 'errors' => $this->l('You do not have permission to edit this.')]));
+
+            return;
+        }
+
+        $way = (bool) Tools::getValue('way');
+        $id_shipping_rule = (int) Tools::getValue('id');
+        $positions = Tools::getValue('shipping_rule');
+        if (!is_array($positions)) {
+            $positions = [];
+        }
+
+        $new_positions = [];
+        foreach ($positions as $v) {
+            if (!empty($v)) {
+                $new_positions[] = $v;
             }
+        }
 
-            $new_positions = [];
-            foreach ($positions as $v) {
-                if (!empty($v)) {
-                    $new_positions[] = $v;
+        foreach ($new_positions as $position => $value) {
+            $pos = explode('_', $value);
+
+            if (isset($pos[2]) && (int) $pos[2] === $id_shipping_rule) {
+                $shipping_rule = new ShippingRulesClass($id_shipping_rule);
+                if (!Validate::isLoadedObject($shipping_rule)) {
+                    $this->renderAjax(json_encode([
+                        'hasError' => true,
+                        'errors' => sprintf($this->l('The shipping rule %d can not be loaded.'), $id_shipping_rule),
+                    ]));
+                } elseif ($shipping_rule->updatePosition($way, $position, $id_shipping_rule)) {
+                    $this->renderAjax('ok position ' . (int) $position . ' for shipping rule ' . $id_shipping_rule . "\r\n");
+                } else {
+                    $this->renderAjax(json_encode([
+                        'hasError' => true,
+                        'errors' => sprintf($this->l('Can not update the shipping rule %1$d to position %2$d.'), $id_shipping_rule, $position),
+                    ]));
                 }
-            }
 
-            foreach ($new_positions as $position => $value) {
-                $pos = explode('_', $value);
-
-                if (isset($pos[2]) && (int) $pos[2] === $id_shipping_rule) {
-                    $shipping_rule = new ShippingRulesClass((int) $pos[2]);
-                    if (Validate::isLoadedObject($shipping_rule)) {
-                        if ($shipping_rule->updatePosition($way, $position, $id_shipping_rule)) {
-                            echo 'ok position ' . (int) $position . ' for feature ' . (int) $pos[1] . '\r\n';
-                        } else {
-                            echo '{"hasError" : true, "errors" : "Can not update feature ' . (int) $id_shipping_rule . ' to position ' . (int) $position . ' "}';
-                        }
-                    } else {
-                        echo '{"hasError" : true, "errors" : "This feature (' . (int) $id_shipping_rule . ') can t be loaded"}';
-                    }
-
-                    break;
-                }
+                break;
             }
         }
     }

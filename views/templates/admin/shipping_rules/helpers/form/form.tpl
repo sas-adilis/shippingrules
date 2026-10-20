@@ -54,6 +54,9 @@
                 </select>
             </div>
         </div>
+        {if isset($input.desc)}
+            <p class="help-block">{$input.desc|escape:'html':'UTF-8'}</p>
+        {/if}
     {elseif $input.name == 'id_country'}
 
         <select name="{$input.name|escape:'html':'UTF-8'}"
