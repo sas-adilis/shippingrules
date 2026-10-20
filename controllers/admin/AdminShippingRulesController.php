@@ -15,6 +15,25 @@ class AdminShippingRulesController extends ModuleAdminController
 
     protected $position_identifier = 'id_shipping_rule';
 
+    /**
+     * Controller::l() was removed in PrestaShop 9, so the module translation is resolved here (legacy MD5 keys).
+     *
+     * @param string      $string
+     * @param string|null $class
+     * @param bool        $addslashes
+     * @param bool        $htmlentities
+     *
+     * @return string
+     */
+    protected function l($string, $class = null, $addslashes = false, $htmlentities = true)
+    {
+        if ($class === null || $class === 'AdminTab') {
+            $class = get_class($this);
+        }
+
+        return Translate::getModuleTranslation($this->module->name, $string, $class, null, $addslashes, null, true, $htmlentities);
+    }
+
     public function __construct()
     {
         require_once __DIR__ . '/../../classes/ShippingRulesClass.php';
