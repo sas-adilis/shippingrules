@@ -10,6 +10,9 @@ if (!defined('_PS_VERSION_')) {
 
 class AdminShippingRulesController extends ModuleAdminController
 {
+    /** @var ShippingRulesClass */
+    public $object;
+
     protected $position_identifier = 'id_shipping_rule';
 
     public function __construct()
@@ -18,7 +21,6 @@ class AdminShippingRulesController extends ModuleAdminController
 
         $this->className = 'ShippingRulesClass';
         $this->table = 'shipping_rule';
-        $this->primary_key = 'id_shipping_rule';
         $this->list_id = 'shipping_rule';
         $this->bootstrap = true;
         $this->_defaultOrderBy = 'position';
@@ -34,6 +36,13 @@ class AdminShippingRulesController extends ModuleAdminController
             LEFT JOIN ' . _DB_PREFIX_ . 'zone z ON z.id_zone = a.id_zone
 		';
         $this->_use_found_rows = false;
+
+        // In a single shop context, the status displayed is the one of the shop
+        $is_shop_context = Shop::isFeatureActive() && Shop::getContext() == Shop::CONTEXT_SHOP;
+        if ($is_shop_context) {
+            $this->_select .= ', srs.active';
+            $this->_join .= ' LEFT JOIN ' . _DB_PREFIX_ . 'shipping_rule_shop srs ON (srs.id_shipping_rule = a.id_shipping_rule AND srs.id_shop = ' . (int) Shop::getContextShopID() . ')';
+        }
 
         parent::__construct();
 
@@ -73,7 +82,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 'filter_key' => 'z!id_zone',
                 'type' => 'select',
                 'list' => array_reduce(
-                    Zone::getZones(Context::getContext()->cookie->id_lang),
+                    Zone::getZones(true),
                     function ($carry, $item) {
                         $carry[$item['id_zone']] = $item['name'];
 
@@ -140,36 +149,40 @@ class AdminShippingRulesController extends ModuleAdminController
                 'orderby' => false,
             ],
         ];
+
+        if ($is_shop_context) {
+            $this->fields_list['active']['filter_key'] = 'srs!active';
+        }
     }
 
-    public function getCarrierName($carrier, $tr)
+    public function getCarrierName(?string $carrier, array $tr): string
     {
-        if ((int) $tr['id_carrier'] == 0) {
+        if ((int) $tr['id_carrier'] === 0) {
             return $this->l('All carriers');
         }
 
-        return $carrier;
+        return (string) $carrier;
     }
 
-    public function getCountryName($country, $tr)
+    public function getCountryName(?string $country, array $tr): string
     {
-        if ((int) $tr['id_country'] == 0) {
+        if ((int) $tr['id_country'] === 0) {
             return $this->l('All countries');
         }
 
-        return $country;
+        return (string) $country;
     }
 
-    public function getZoneName($zone, $tr)
+    public function getZoneName(?string $zone, array $tr): string
     {
-        if ((int) $tr['id_zone'] == 0) {
+        if ((int) $tr['id_zone'] === 0) {
             return $this->l('All zones');
         }
 
-        return $zone;
+        return (string) $zone;
     }
 
-    public function getRuleTypeName($rule_type, $tr)
+    public function getRuleTypeName($rule_type, array $tr): string
     {
         switch ($rule_type) {
             case ShippingRulesClass::RULE_TYPE_FREE:
@@ -191,11 +204,11 @@ class AdminShippingRulesController extends ModuleAdminController
         return '';
     }
 
-    public function renderForm()
+    public function renderForm(): string
     {
         $carriers = Carrier::getCarriers($this->context->cookie->id_lang, true, 0, false, null, Carrier::ALL_CARRIERS);
         $countries = Country::getCountries($this->context->cookie->id_lang, false);
-        $zones = Zone::getZones($this->context->cookie->id_lang, false);
+        $zones = Zone::getZones(true);
         $currencies = Currency::getCurrencies();
 
         $this->fields_form = [
@@ -282,7 +295,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'label' => $this->l('New amount'),
                     'name' => 'new_amount',
                     'maxlength' => 10,
-                    'suffix' => $this->context->currency->getSign('right') . ' ' . $this->l('(tax excl.)'),
+                    'suffix' => $this->context->currency->sign . ' ' . $this->l('(tax excl.)'),
                     'required' => true,
                 ],
                 [
@@ -290,7 +303,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'label' => $this->l('Impact amount'),
                     'name' => 'impact_amount',
                     'maxlength' => 10,
-                    'suffix' => $this->context->currency->getSign('right') . ' ' . $this->l('(tax excl.)'),
+                    'suffix' => $this->context->currency->sign . ' ' . $this->l('(tax excl.)'),
                     'required' => true,
                 ],
                 [
@@ -335,7 +348,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'label' => $this->l('From price'),
                     'name' => 'minimum_amount',
                     'maxlength' => 10,
-                    'suffix' => $this->context->currency->getSign('right'),
+                    'suffix' => $this->context->currency->sign,
                     'required' => true,
                     'currencies' => $currencies,
                 ],
@@ -345,7 +358,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'desc' => $this->l('Leave 0 for no limit.'),
                     'name' => 'maximum_amount',
                     'maxlength' => 10,
-                    'suffix' => $this->context->currency->getSign('right'),
+                    'suffix' => $this->context->currency->sign,
                     'required' => true,
                     'currencies' => $currencies,
                 ],
@@ -441,7 +454,7 @@ class AdminShippingRulesController extends ModuleAdminController
         return parent::renderForm();
     }
 
-    public function _childValidation()
+    public function _childValidation(): void
     {
         if ((float) Tools::getValue('maximum_amount') > 0 && (float) Tools::getValue('minimum_amount') > (float) Tools::getValue('maximum_amount')) {
             $this->errors[] = $this->l('The minimum amount must be less than the maximum amount.');
@@ -497,9 +510,13 @@ class AdminShippingRulesController extends ModuleAdminController
         }
     }
 
-    public function copyFromPost(&$object, $table)
+    public function copyFromPost(&$object, $table): void
     {
         parent::copyFromPost($object, $table);
+        if (!$object instanceof ShippingRulesClass) {
+            return;
+        }
+
         $object->value = 0;
         switch (Tools::getValue('rule_type')) {
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
@@ -522,7 +539,7 @@ class AdminShippingRulesController extends ModuleAdminController
         }
     }
 
-    public function setMedia($isNewTheme = false)
+    public function setMedia($isNewTheme = false): void
     {
         parent::setMedia($isNewTheme);
         $this->addJS($this->module->getPathUri() . 'views/js/admin.js');
@@ -534,7 +551,7 @@ class AdminShippingRulesController extends ModuleAdminController
     }
 
     /**
-     * ajaxRender() only exists since PrestaShop 1.7.6.
+     * ajaxRender() only exists since PrestaShop 1.7.5.
      */
     protected function renderAjax(string $value): void
     {
@@ -545,7 +562,7 @@ class AdminShippingRulesController extends ModuleAdminController
         }
     }
 
-    public function ajaxProcessSearchCustomers()
+    public function ajaxProcessSearchCustomers(): void
     {
         $customers = [];
         $search_query = trim((string) Tools::getValue('q'));
@@ -553,10 +570,10 @@ class AdminShippingRulesController extends ModuleAdminController
         if ($this->access('view') && mb_strlen($search_query) >= 2) {
             $display_shop_name = Shop::isFeatureActive() && Shop::getContext() != Shop::CONTEXT_SHOP;
             $customers = Db::getInstance()->executeS('
-                SELECT c.`id_customer`, c.`email`, CONCAT(c.`firstname`, \' \', c.`lastname`) AS cname' .
-                ($display_shop_name ? ', s.`name` AS shop_name' : '') . '
-                FROM `' . _DB_PREFIX_ . 'customer` c' .
-                ($display_shop_name ? ' INNER JOIN `' . _DB_PREFIX_ . 'shop` s ON s.`id_shop` = c.`id_shop`' : '') . '
+                SELECT c.`id_customer`, c.`email`, CONCAT(c.`firstname`, \' \', c.`lastname`) AS cname'
+                . ($display_shop_name ? ', s.`name` AS shop_name' : '') . '
+                FROM `' . _DB_PREFIX_ . 'customer` c'
+                . ($display_shop_name ? ' INNER JOIN `' . _DB_PREFIX_ . 'shop` s ON s.`id_shop` = c.`id_shop`' : '') . '
                 WHERE c.`deleted` = 0 AND c.`is_guest` = 0 AND c.`active` = 1
                 AND (
                     c.`id_customer` = ' . (int) $search_query . '
@@ -573,7 +590,7 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->renderAjax(json_encode($customers ?: []));
     }
 
-    public function ajaxProcessUpdatePositions()
+    public function ajaxProcessUpdatePositions(): void
     {
         if (!$this->access('edit')) {
             $this->renderAjax(json_encode(['hasError' => true, 'errors' => $this->l('You do not have permission to edit this.')]));

@@ -23,13 +23,13 @@ class ShippingRules extends Module
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
-        $this->ps_versions_compliancy = ['min' => '1.7.0.0','max' => _PS_VERSION_];
+        $this->ps_versions_compliancy = ['min' => '1.7.0.0', 'max' => _PS_VERSION_];
         $this->module_key = '200007ae5a749e9922e27bee45ff215c';
 
         parent::__construct();
     }
 
-    public function install()
+    public function install(): bool
     {
         if (file_exists($this->getLocalPath() . 'sql/install.php')) {
             $sql_result = require_once $this->getLocalPath() . 'sql/install.php';
@@ -48,14 +48,14 @@ class ShippingRules extends Module
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    public function uninstall()
+    public function uninstall(): bool
     {
         return
             parent::uninstall()
             && $this->uninstallTab();
     }
 
-    private function installTab()
+    private function installTab(): bool
     {
         if (!Tab::getIdFromClassName('AdminShippingRules')) {
             $tab = new Tab();
@@ -78,7 +78,7 @@ class ShippingRules extends Module
      * @throws PrestaShopException
      * @throws PrestaShopDatabaseException
      */
-    public function uninstallTab()
+    public function uninstallTab(): bool
     {
         if ($id_tab = Tab::getIdFromClassName('AdminShippingRules')) {
             $tab = new Tab($id_tab);
@@ -95,7 +95,7 @@ class ShippingRules extends Module
      * @throws PrestaShopDatabaseException
      * @throws Exception
      */
-    public function hookActionGetPackageShippingCost($params)
+    public function hookActionGetPackageShippingCost(array $params): void
     {
         if ($params['shipping_cost'] === false) {
             return;
@@ -174,7 +174,7 @@ class ShippingRules extends Module
             $query->where('sr.id_country IN (' . $id_country . ', 0)');
             $query->where('sr.id_group IN (' . implode(',', $groups) . ')');
             $query->where('sr.id_customer IN (0, ' . $id_customer . ')');
-            $query->where('sr.active = 1');
+            $query->where((Shop::isFeatureActive() ? 'srs' : 'sr') . '.active = 1');
             $query->where('sr.`from` <= NOW()');
             $query->where('sr.`to` >= NOW()');
             $query->orderBy('sr.position ASC');
@@ -211,7 +211,7 @@ class ShippingRules extends Module
             ) {
                 if (!empty($shipping_rule['postcode_list'])) {
                     $postcode_list = self::getCleanedPostcodeList($shipping_rule['postcode_list']);
-                    if (!$address || !in_array($address->postcode, $postcode_list)) {
+                    if (!$address || !in_array(self::normalizePostcode((string) $address->postcode), array_map([self::class, 'normalizePostcode'], $postcode_list))) {
                         continue;
                     }
                 }
@@ -262,9 +262,8 @@ class ShippingRules extends Module
      * Converts a rule amount (shop default currency, tax excl.) to the cart currency, with the carrier taxes if required.
      *
      * @param float|string $value
-     * @param Address|null $address
      */
-    private function getFixedAmount($value, Cart $cart, Currency $cart_currency, Carrier $carrier, bool $use_tax, $address): float
+    private function getFixedAmount($value, Cart $cart, Currency $cart_currency, Carrier $carrier, bool $use_tax, ?Address $address): float
     {
         $amount = (float) Tools::convertPriceFull((float) $value, Currency::getDefaultCurrency(), $cart_currency);
 
@@ -279,12 +278,17 @@ class ShippingRules extends Module
         return $amount;
     }
 
-    public function getContent()
+    public function getContent(): void
     {
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminShippingRules'));
     }
 
-    public static function getCleanedPostcodeList($postcode_list): array
+    private static function normalizePostcode(string $postcode): string
+    {
+        return strtoupper(str_replace(' ', '', trim($postcode)));
+    }
+
+    public static function getCleanedPostcodeList(?string $postcode_list): array
     {
         $postcode_list = explode(',', (string) $postcode_list);
         $postcode_list = array_map('trim', $postcode_list);

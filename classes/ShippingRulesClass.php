@@ -67,13 +67,13 @@ class ShippingRulesClass extends ObjectModel
         ],
     ];
 
-    public function __construct($id_tab = null, $id_lang = null, $id_shop = null)
+    public function __construct($id = null, $id_lang = null, $id_shop = null)
     {
         Shop::addTableAssociation('shipping_rule', ['type' => 'shop']);
-        parent::__construct($id_tab, $id_lang, $id_shop);
+        parent::__construct($id, $id_lang, $id_shop);
     }
 
-    public function add($autoDate = true, $nullValues = false)
+    public function add($autoDate = true, $nullValues = false): bool
     {
         if ($this->position <= 0) {
             $this->position = self::getHigherPosition() + 1;
@@ -82,20 +82,35 @@ class ShippingRulesClass extends ObjectModel
         return parent::add($autoDate, true);
     }
 
-    public function delete()
+    public function delete(): bool
     {
         $return = parent::delete();
-        $this->cleanPositions();
+        self::cleanPositions();
 
         return $return;
     }
 
-    public static function getHigherPosition()
+    /**
+     * In a single shop context, the status to flip is the one of the shop, not the global one.
+     */
+    public function toggleStatus(): bool
+    {
+        if (Shop::isFeatureActive() && Shop::getContext() == Shop::CONTEXT_SHOP) {
+            $this->active = (int) Db::getInstance()->getValue(
+                'SELECT `active` FROM `' . _DB_PREFIX_ . 'shipping_rule_shop`
+                WHERE `id_shipping_rule` = ' . (int) $this->id . ' AND `id_shop` = ' . (int) Shop::getContextShopID()
+            );
+        }
+
+        return (bool) parent::toggleStatus();
+    }
+
+    public static function getHigherPosition(): int
     {
         $sql = 'SELECT MAX(`position`) FROM `' . _DB_PREFIX_ . 'shipping_rule`';
         $position = Db::getInstance()->getValue($sql);
 
-        return (is_numeric($position)) ? $position : -1;
+        return is_numeric($position) ? (int) $position : -1;
     }
 
     public static function cleanPositions(): bool
@@ -109,7 +124,7 @@ class ShippingRulesClass extends ObjectModel
     /**
      * @throws PrestaShopDatabaseException
      */
-    public function updatePosition($way, $position, $id_shipping_rule = null): bool
+    public function updatePosition(bool $way, int $position, int $id_shipping_rule = 0): bool
     {
         if (!$res = Db::getInstance()->executeS(
             '
@@ -127,7 +142,7 @@ class ShippingRulesClass extends ObjectModel
             }
         }
 
-        if (!isset($moved_shipping_rule) || !isset($position)) {
+        if (!isset($moved_shipping_rule)) {
             return false;
         }
 

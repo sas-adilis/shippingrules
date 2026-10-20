@@ -1,4 +1,13 @@
 <?php
+/**
+ * @author    Adilis <support@adilis.fr>
+ * @copyright 2024 SAS Adilis
+ * @license   http://www.adilis.fr
+ */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 global $_MODULE;
 $_MODULE = [];
 $_MODULE['<{shippingrules}prestashop>form_58ef6750a23ba432fc1377b7de085d9f'] = 'IVA esclusa';

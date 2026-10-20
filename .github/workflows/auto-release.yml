@@ -90,6 +90,7 @@ jobs:
           zip -r "/tmp/${ARCHIVE}" "${MODULE_NAME}" \
             --exclude "*/.git/*" \
             --exclude "*/.github/*" \
+            --exclude "*/_dev" \
             --exclude "*/_dev/*" \
             --exclude "*/node_modules/*" \
             --exclude "*/.DS_Store" \

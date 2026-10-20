@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# Hook pre-commit — exécute `make fix` avant chaque commit.
+#
+# Installation (une seule fois par clone) :
+#   git config core.hooksPath .githooks
+#   (ou via `make install`)
+
+# Fichiers PHP déjà stagés avant le fix
+STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$')
+
+echo "🔧 Exécution de make fix..."
+make fix
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ make fix a échoué. Commit annulé."
+    exit 1
+fi
+
+# Re-stager uniquement les fichiers PHP qui étaient déjà stagés
+# (CS Fixer / noblank ont peut-être modifié leur contenu)
+if [ -n "$STAGED_PHP" ]; then
+    echo "$STAGED_PHP" | xargs git add
+    echo "✔ Fichiers PHP re-stagés après fix."
+fi
+
+echo "✅ make fix terminé. Commit en cours..."
+exit 0
