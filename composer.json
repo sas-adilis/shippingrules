@@ -4,6 +4,9 @@
         "prepend-autoloader": false,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.2.0"
         }
     },
     "require-dev": {

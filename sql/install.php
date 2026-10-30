@@ -32,7 +32,8 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'shipping_rule` (
     `to` datetime NOT NULL,
     `active` tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
     `position` int(10) UNSIGNED NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id_shipping_rule`)
+    PRIMARY KEY (`id_shipping_rule`),
+    KEY `idx_lookup` (`id_zone`, `id_country`, `id_group`, `id_customer`)
 ) ENGINE = ' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8';
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'shipping_rule_shop` (
