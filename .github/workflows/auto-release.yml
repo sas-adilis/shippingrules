@@ -95,6 +95,9 @@ jobs:
             --exclude "*/_dev" \
             --exclude "*/_dev/*" \
             --exclude "*/node_modules/*" \
+            --exclude "*/tests/*" \
+            --exclude "*/.phpunit.cache/*" \
+            --exclude "*/phpunit.xml" \
             --exclude "*/.DS_Store" \
             --exclude "*/.gitignore" \
             --exclude "*/.php-cs-fixer.dist.php" \

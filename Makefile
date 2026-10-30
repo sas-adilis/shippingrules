@@ -1,4 +1,4 @@
-.PHONY: prepare
+.PHONY: prepare test fix noblank
 
 noblank:
 	find . -type f -name "*.php" ! -path "./vendor/*" | while read file; do \
@@ -23,6 +23,10 @@ noblank:
 fix :
 	composer i && \
 	PHP_CS_FIXER_IGNORE_ENV=1 php vendor/bin/php-cs-fixer fix && \
+	php vendor/bin/pest && \
 	composer i --no-dev && \
 	rm -rf vendor && \
 	$(MAKE) noblank
+
+test:
+	composer i && php vendor/bin/pest

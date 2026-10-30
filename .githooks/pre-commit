@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Hook pre-commit — exécute `make fix` avant chaque commit.
+# Hook pre-commit — exécute `make fix` (CS Fixer + tests Pest) avant chaque commit.
 #
 # Installation (une seule fois par clone) :
 #   git config core.hooksPath .githooks
@@ -9,12 +9,12 @@
 # Fichiers PHP déjà stagés avant le fix
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$')
 
-echo "🔧 Exécution de make fix..."
+echo "🔧 Exécution de make fix (CS Fixer + tests)..."
 make fix
 
 if [ $? -ne 0 ]; then
     echo ""
-    echo "❌ make fix a échoué. Commit annulé."
+    echo "❌ make fix a échoué (style ou tests). Commit annulé."
     exit 1
 fi
 

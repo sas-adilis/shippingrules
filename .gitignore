@@ -5,3 +5,4 @@ composer.lock
 /views/css/table.17.css.map
 /vendor/
 .DS_Store
+.phpunit.cache/

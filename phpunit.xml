@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache">
+    <source ignoreIndirectDeprecations="true">
+        <include>
+            <directory suffix=".php">classes</directory>
+            <directory suffix=".php">controllers</directory>
+            <file>shippingrules.php</file>
+        </include>
+    </source>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

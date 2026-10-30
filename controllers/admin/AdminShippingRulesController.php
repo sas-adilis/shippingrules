@@ -18,10 +18,10 @@ class AdminShippingRulesController extends ModuleAdminController
     /**
      * Controller::l() was removed in PrestaShop 9, so the module translation is resolved here (legacy MD5 keys).
      *
-     * @param string      $string
+     * @param string $string
      * @param string|null $class
-     * @param bool        $addslashes
-     * @param bool        $htmlentities
+     * @param bool $addslashes
+     * @param bool $htmlentities
      *
      * @return string
      */

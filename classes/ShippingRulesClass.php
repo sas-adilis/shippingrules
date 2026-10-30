@@ -10,13 +10,13 @@ if (!defined('_PS_VERSION_')) {
 
 class ShippingRulesClass extends ObjectModel
 {
-    const RULE_TYPE_ADDITIONAL = 1;
-    const RULE_TYPE_FREE = 2;
-    const RULE_TYPE_ADDITIONAL_PERCENT = 3;
-    const RULE_TYPE_DISABLE = 4;
-    const RULE_TYPE_SET_AMOUNT = 5;
-    const RULE_TYPE_REDUCTION_PERCENT = 6;
-    const RULE_TYPE_REDUCTION = 7;
+    public const RULE_TYPE_ADDITIONAL = 1;
+    public const RULE_TYPE_FREE = 2;
+    public const RULE_TYPE_ADDITIONAL_PERCENT = 3;
+    public const RULE_TYPE_DISABLE = 4;
+    public const RULE_TYPE_SET_AMOUNT = 5;
+    public const RULE_TYPE_REDUCTION_PERCENT = 6;
+    public const RULE_TYPE_REDUCTION = 7;
 
     /** @var int */
     public $id_carrier = 0;
