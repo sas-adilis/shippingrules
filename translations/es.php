@@ -65,3 +65,4 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_f394d071497ab8
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_daef502d829823625a141ec9caf86889'] = 'El porcentaje del impacto es incorrecto.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_b099c3bb67fa12d82567df737515929c'] = 'El nuevo importe es incorrecto.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_4a1c023bedbf2132e7167c2b00160f5f'] = 'El código postal %s es incorrecto.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_686fcafa6b8f129874f3052b437eeb05'] = 'El cliente seleccionado no existe.';

@@ -20,12 +20,12 @@ $(function () {
         if (selectedZone === 0) {
             $idCountrySelect.closest('.form-group').hide().end().val(0);
         } else {
-            const valueBefore = parseInt($idCountrySelect.val());
+            const valueBefore = parseInt($idCountrySelect.val(), 10);
             let valueBeforeExists = false;
             const options = $selectCountryClone.children().filter(function () {
-                const idZone = parseInt($(this).attr('data-id-zone')) || 0;
+                const idZone = parseInt($(this).attr('data-id-zone'), 10) || 0;
                 if (idZone === -1 || idZone === selectedZone) {
-                    if (parseInt($(this).val()) === valueBefore) {
+                    if (parseInt($(this).val(), 10) === valueBefore) {
                         valueBeforeExists = true;
                     }
                     return true;
@@ -38,7 +38,7 @@ $(function () {
     }
 
     function toggleValueField() {
-        const value = parseInt($(this).val()) || 0;
+        const value = parseInt($(this).val(), 10) || 0;
         if (value === 1 || value === 7) {
             $impactAmountInput.closest('.form-group').show();
         } else {
@@ -59,16 +59,14 @@ $(function () {
             $newAmountInput.closest('.form-group').hide();
             $newAmountInput.val(0);
         }
-
-
     }
 
     $idZoneSelect.on('change', function () {
-        updateCountryOptions(parseInt($(this).val()) || 0);
+        updateCountryOptions(parseInt($(this).val(), 10) || 0);
     }).trigger('change');
 
     $idCountrySelect.on('change', function () {
-        const selectIdCountry = parseInt($(this).val()) || 0;
+        const selectIdCountry = parseInt($(this).val(), 10) || 0;
         if (selectIdCountry === 0) {
             $postcodeListTextarea.closest('.form-group').hide();
         } else {
@@ -78,12 +76,12 @@ $(function () {
 
     $ruleTypeSelect.on('change', toggleValueField).trigger('change');
 
-    $('#shipping_rule_form').submit((e) => {
+    $('#shipping_rule_form').on('submit', () => {
         if ($customerFilterInput.val() === '') {
             $customerIdInput.val('0');
         }
 
-        if ((parseInt($($idCountrySelect).val()) || 0) === 0) {
+        if ((parseInt($idCountrySelect.val(), 10) || 0) === 0) {
             $postcodeListTextarea.val('');
         }
     });
@@ -101,7 +99,7 @@ $(function () {
                     return $('<div>').text(value).html();
                 },
                 parse(data) {
-                    const mytab = new Array();
+                    const mytab = [];
 
                     for (let i = 0; i < data.length; i++) {
                         mytab[mytab.length] = {

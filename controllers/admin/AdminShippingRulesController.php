@@ -51,7 +51,7 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->_select = 'co_l.name country_name, ca.name carrier_name, z.name zone_name';
         $this->_join = '
             LEFT JOIN ' . _DB_PREFIX_ . 'carrier ca ON (ca.id_reference = a.id_carrier AND ca.deleted = 0)
-            LEFT JOIN ' . _DB_PREFIX_ . 'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang=' . (int) Context::getContext()->cookie->id_lang . ')
+            LEFT JOIN ' . _DB_PREFIX_ . 'country_lang co_l ON (co_l.id_country = a.id_country AND co_l.id_lang=' . (int) Context::getContext()->language->id . ')
             LEFT JOIN ' . _DB_PREFIX_ . 'zone z ON z.id_zone = a.id_zone
 		';
         $this->_use_found_rows = false;
@@ -82,12 +82,12 @@ class AdminShippingRulesController extends ModuleAdminController
             'carrier_name' => [
                 'title' => $this->l('Carrier'),
                 'align' => 'center',
-                'filter_key' => 'ca!name',
+                'filter_key' => 'a!id_carrier',
                 'type' => 'select',
                 'list' => array_reduce(
-                    Carrier::getCarriers(Context::getContext()->cookie->id_lang, true, 0, false, null, Carrier::ALL_CARRIERS),
+                    Carrier::getCarriers((int) Context::getContext()->language->id, true, 0, false, null, Carrier::ALL_CARRIERS),
                     function ($carry, $item) {
-                        $carry[$item['id_carrier']] = $item['name'];
+                        $carry[$item['id_reference']] = $item['name'];
 
                         return $carry;
                     },
@@ -117,7 +117,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 'type' => 'select',
                 'filter_key' => 'co_l!id_country',
                 'list' => array_reduce(
-                    Country::getCountries(Context::getContext()->cookie->id_lang),
+                    Country::getCountries((int) Context::getContext()->language->id),
                     function ($carry, $item) {
                         $carry[$item['id_country']] = $item['name'];
 
@@ -132,6 +132,7 @@ class AdminShippingRulesController extends ModuleAdminController
                 'title' => $this->l('Rule type'),
                 'list' => [
                     ShippingRulesClass::RULE_TYPE_FREE => $this->l('Free shipping'),
+                    ShippingRulesClass::RULE_TYPE_SET_AMOUNT => $this->l('New amount'),
                     ShippingRulesClass::RULE_TYPE_ADDITIONAL => $this->l('Additional cost (amount)'),
                     ShippingRulesClass::RULE_TYPE_ADDITIONAL_PERCENT => $this->l('Additional cost (percent)'),
                     ShippingRulesClass::RULE_TYPE_REDUCTION => $this->l('Cost reduction (amount)'),
@@ -201,9 +202,12 @@ class AdminShippingRulesController extends ModuleAdminController
         return (string) $zone;
     }
 
+    /**
+     * @param int|string $rule_type
+     */
     public function getRuleTypeName($rule_type, array $tr): string
     {
-        switch ($rule_type) {
+        switch ((int) $rule_type) {
             case ShippingRulesClass::RULE_TYPE_FREE:
                 return $this->l('Free shipping');
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
@@ -225,8 +229,8 @@ class AdminShippingRulesController extends ModuleAdminController
 
     public function renderForm(): string
     {
-        $carriers = Carrier::getCarriers($this->context->cookie->id_lang, true, 0, false, null, Carrier::ALL_CARRIERS);
-        $countries = Country::getCountries($this->context->cookie->id_lang, false);
+        $carriers = Carrier::getCarriers((int) $this->context->language->id, true, 0, false, null, Carrier::ALL_CARRIERS);
+        $countries = Country::getCountries((int) $this->context->language->id, false);
         $zones = Zone::getZones(true);
         $currencies = Currency::getCurrencies();
 
@@ -347,7 +351,7 @@ class AdminShippingRulesController extends ModuleAdminController
                     'required' => true,
                     'options' => [
                         'default' => ['value' => 0, 'label' => $this->l('All groups')],
-                        'query' => Group::getGroups($this->context->cookie->id_lang, true),
+                        'query' => Group::getGroups((int) $this->context->language->id, true),
                         'id' => 'id_group',
                         'name' => 'name',
                     ],
@@ -435,9 +439,10 @@ class AdminShippingRulesController extends ModuleAdminController
         ];
 
         $this->fields_value['minimum_amount_tax'] = $this->object->minimum_amount_tax;
-        $this->fields_value['minimum_amount_currency'] = $this->object->minimum_amount_currency;
+        $default_currency = (int) Configuration::get('PS_CURRENCY_DEFAULT');
+        $this->fields_value['minimum_amount_currency'] = $this->object->minimum_amount_currency ?: $default_currency;
         $this->fields_value['maximum_amount_tax'] = $this->object->maximum_amount_tax;
-        $this->fields_value['maximum_amount_currency'] = $this->object->maximum_amount_currency;
+        $this->fields_value['maximum_amount_currency'] = $this->object->maximum_amount_currency ?: $default_currency;
 
         $this->fields_value['impact_amount'] = $this->fields_value['impact_percent'] = $this->fields_value['new_amount'] = 0;
         switch ($this->object->rule_type) {
@@ -480,6 +485,10 @@ class AdminShippingRulesController extends ModuleAdminController
 
         if ((float) Tools::getValue('maximum_weight') > 0 && (float) Tools::getValue('minimum_weight') > (float) Tools::getValue('maximum_weight')) {
             $this->errors[] = $this->l('The minimum weight must be less than the maximum weight.');
+        }
+
+        if ((int) Tools::getValue('id_customer') && !Validate::isLoadedObject(new Customer((int) Tools::getValue('id_customer')))) {
+            $this->errors[] = $this->l('The selected customer does not exist.');
         }
 
         if (Tools::getValue('from') >= Tools::getValue('to')) {

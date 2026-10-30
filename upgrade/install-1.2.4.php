@@ -8,7 +8,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-function upgrade_module_1_2_4()
+function upgrade_module_1_2_4(): bool
 {
     $queries = [
         'ALTER TABLE `' . _DB_PREFIX_ . 'shipping_rule` MODIFY `minimum_amount_currency` int(11) unsigned NOT NULL DEFAULT 0',

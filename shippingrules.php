@@ -55,6 +55,9 @@ class ShippingRules extends Module
             && $this->uninstallTab();
     }
 
+    /**
+     * @throws PrestaShopException
+     */
     private function installTab(): bool
     {
         if (!Tab::getIdFromClassName('AdminShippingRules')) {
@@ -107,7 +110,7 @@ class ShippingRules extends Module
             return;
         }
 
-        $id_carrier = $params['id_carrier'];
+        $id_carrier = (int) $params['id_carrier'];
         $use_tax = !empty($params['use_tax']);
         $product_list = !empty($params['product_list']) && is_array($params['product_list']) ? $params['product_list'] : null;
         $address_products = $product_list === null ? $cart->getProducts() : $product_list;
@@ -141,7 +144,7 @@ class ShippingRules extends Module
 
         // Carrier
         if (empty($id_carrier)) {
-            $id_carrier = Configuration::get('PS_CARRIER_DEFAULT');
+            $id_carrier = (int) Configuration::get('PS_CARRIER_DEFAULT');
         }
 
         $carrier = new Carrier($id_carrier);
@@ -203,7 +206,7 @@ class ShippingRules extends Module
             }
 
             if (
-                ($shipping_rule['id_carrier'] == $carrier->id_reference || $shipping_rule['id_carrier'] == 0)
+                ((int) $shipping_rule['id_carrier'] === (int) $carrier->id_reference || (int) $shipping_rule['id_carrier'] === 0)
                 && $cart_amount_tax >= $shipping_rule['minimum_amount']
                 && ($shipping_rule['maximum_amount'] <= 0 || $cart_amount_tax <= $shipping_rule['maximum_amount'])
                 && $cart_weight >= $shipping_rule['minimum_weight']

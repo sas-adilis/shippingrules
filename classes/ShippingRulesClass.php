@@ -18,24 +18,43 @@ class ShippingRulesClass extends ObjectModel
     const RULE_TYPE_REDUCTION_PERCENT = 6;
     const RULE_TYPE_REDUCTION = 7;
 
+    /** @var int */
     public $id_carrier = 0;
+    /** @var int */
     public $id_zone = 0;
+    /** @var int */
     public $id_country = 0;
+    /** @var int */
     public $id_group = 0;
+    /** @var int */
     public $id_customer = 0;
+    /** @var string|null */
     public $postcode_list;
+    /** @var float */
     public $minimum_amount = 0;
+    /** @var int */
     public $minimum_amount_currency = 0;
+    /** @var bool|int */
     public $minimum_amount_tax = 0;
+    /** @var float */
     public $maximum_amount = 0;
+    /** @var int */
     public $maximum_amount_currency = 0;
+    /** @var bool|int */
     public $maximum_amount_tax = 0;
+    /** @var float */
     public $minimum_weight = 0;
+    /** @var float */
     public $maximum_weight = 0;
+    /** @var float */
     public $value = 0;
+    /** @var int */
     public $rule_type = self::RULE_TYPE_FREE;
+    /** @var string */
     public $from;
+    /** @var string */
     public $to;
+    /** @var bool|int */
     public $active = 1;
     /** @var int */
     public $position;
@@ -67,6 +86,11 @@ class ShippingRulesClass extends ObjectModel
         ],
     ];
 
+    /**
+     * @param int|null $id
+     * @param int|null $id_lang
+     * @param int|null $id_shop
+     */
     public function __construct($id = null, $id_lang = null, $id_shop = null)
     {
         Shop::addTableAssociation('shipping_rule', ['type' => 'shop']);
@@ -130,14 +154,14 @@ class ShippingRulesClass extends ObjectModel
             '
 			SELECT `position`, `id_shipping_rule`
 			FROM `' . _DB_PREFIX_ . 'shipping_rule`
-			WHERE `id_shipping_rule` = ' . (int) ($id_shipping_rule ?: $this->id) . '
+			WHERE `id_shipping_rule` = ' . (int) ($id_shipping_rule ?: (int) $this->id) . '
 			ORDER BY `position` ASC'
         )) {
             return false;
         }
 
         foreach ($res as $shipping_rule) {
-            if ((int) $shipping_rule['id_shipping_rule'] == (int) $this->id) {
+            if ((int) $shipping_rule['id_shipping_rule'] === ($id_shipping_rule ?: (int) $this->id)) {
                 $moved_shipping_rule = $shipping_rule;
             }
         }

@@ -8,7 +8,10 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-function upgrade_module_1_1_4($module)
+/**
+ * @param Module $module
+ */
+function upgrade_module_1_1_4($module): bool
 {
     $queries = [
         'ALTER TABLE `' . _DB_PREFIX_ . 'shipping_rule` ADD `value` decimal(20,6) default 0 NOT NULL;',

@@ -22,21 +22,21 @@
 
         <div class="row">
             <div class="col-lg-7">
-                {if isset($input.maxchar) || isset($input.prefix) || isset($input.suffix)}
+                {if isset($input.suffix)}
                     <div class="input-group{if isset($input.class)} {$input.class|escape:'html':'UTF-8'}{/if}">
                 {/if}
                         <input type="text"
                                name="{$input.name|escape:'html':'UTF-8'}"
                                id="{if isset($input.id)}{$input.id|escape:'html':'UTF-8'}{else}{$input.name|escape:'html':'UTF-8'}{/if}"
                                value="{$fields_value[$input.name]|escape:'html':'UTF-8'}"
-                               class="{if isset($input.class)}{$input.class|escape:'html':'UTF-8'}{/if}{if $input.type == 'tags'} tagify{/if}"
+                               class="{if isset($input.class)}{$input.class|escape:'html':'UTF-8'}{/if}"{if isset($input.maxlength)} maxlength="{$input.maxlength|intval}"{/if}
                         />
                 {if isset($input.suffix)}
                     <span class="input-group-addon">
                       {$input.suffix|escape:'html':'UTF-8'}
                     </span>
                 {/if}
-                {if isset($input.maxchar) || isset($input.prefix) || isset($input.suffix)}
+                {if isset($input.suffix)}
                     </div>
                 {/if}
             </div>

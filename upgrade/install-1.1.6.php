@@ -8,7 +8,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-function upgrade_module_1_1_6()
+function upgrade_module_1_1_6(): bool
 {
     $field_exists = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . _DB_PREFIX_ . 'shipping_rule` LIKE "position"');
     if (!$field_exists) {
