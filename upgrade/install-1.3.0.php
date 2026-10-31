@@ -17,7 +17,7 @@ function upgrade_module_1_3_0($module): bool
     if (!$module->registerHook('actionCartGetPackageShippingCost')) {
         return false;
     }
-    if (ShippingRules::hasNativeShippingCostHook() && !$module->uninstallOverrides()) {
+    if (ShippingRules::hasNativeShippingCostHook() && !$module->removeLegacyOverride()) {
         return false;
     }
 

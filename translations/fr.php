@@ -92,3 +92,5 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_9a5ed20d57dba2
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_e6f3202a3425dea4bada1c501533e26d'] = 'Les deux heures sont obligatoires et doivent être au format HH:MM.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_1037c52723a50f188a2f033aaffca6d7'] = 'L\'heure de début et l\'heure de fin doivent être différentes.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5f92b3ab9e20cc1eb8c167e604b6830e'] = 'Impossible de dupliquer la règle de livraison %d.';
+$_MODULE['<{shippingrules}prestashop>shippingrules_02c04fe8a338d01b2c184b7cc79bdce8'] = 'Le dossier override du module n\'est pas accessible en écriture.';
+$_MODULE['<{shippingrules}prestashop>shippingrules_d70a49160915802182cc10e1b08b25ba'] = 'L\'override du coût de livraison n\'a pas pu être préparé.';

@@ -40,6 +40,7 @@ class ShippingRules extends Module
 
         return
             parent::install()
+            && $this->installLegacyOverride()
             && $this->installTab()
             && $this->registerHook('actionGetPackageShippingCost')
             && $this->registerHook('actionCartGetPackageShippingCost');
@@ -54,9 +55,64 @@ class ShippingRules extends Module
         return method_exists('CartCore', 'getPackageShippingCostValue');
     }
 
-    public function installOverrides(): bool
+    /**
+     * Before PrestaShop 9.2 the core does not fire the shipping cost hook: a small override of Cart does, and is
+     * installed on these versions only.
+     * The file waits outside override/, so the automatic install of overrides (which would put it on every version)
+     * does not see it.
+     */
+    public function installLegacyOverride(): bool
     {
-        return self::hasNativeShippingCostHook() ? true : (bool) parent::installOverrides();
+        return self::hasNativeShippingCostHook() || $this->withLegacyOverrideFile(function () {
+            return $this->addOverride('Cart');
+        });
+    }
+
+    /**
+     * Removes the override whatever the version: an installation upgraded from a version that put it everywhere
+     * may still hold it.
+     */
+    public function removeLegacyOverride(): bool
+    {
+        if (!is_file(_PS_OVERRIDE_DIR_ . 'classes/Cart.php')) {
+            return true;
+        }
+
+        return $this->withLegacyOverrideFile(function () {
+            return $this->removeOverride('Cart');
+        });
+    }
+
+    /**
+     * Runs an action that reads the override in override/, which only holds the file meanwhile.
+     */
+    private function withLegacyOverrideFile(callable $action): bool
+    {
+        $source = __DIR__ . '/override_legacy/classes/Cart.php';
+        $directory = __DIR__ . '/override/classes';
+        $target = $directory . '/Cart.php';
+        if (!is_dir($directory) && !@mkdir($directory, 0755, true)) {
+            $this->_errors[] = $this->l('The override folder of the module is not writable.');
+
+            return false;
+        }
+        if (!@copy($source, $target)) {
+            $this->_errors[] = $this->l('The override of the shipping cost could not be prepared.');
+
+            return false;
+        }
+
+        try {
+            return (bool) $action();
+        } catch (Exception $e) {
+            $this->_errors[] = $e->getMessage();
+
+            return false;
+        } finally {
+            @unlink($target);
+            @rmdir($directory);
+            @rmdir(__DIR__ . '/override');
+        }
     }
 
     /**
@@ -100,8 +156,9 @@ class ShippingRules extends Module
     public function uninstall(): bool
     {
         return
-            parent::uninstall()
-            && $this->uninstallTab();
+            $this->uninstallTab()
+            && $this->removeLegacyOverride()
+            && parent::uninstall();
     }
 
     /**

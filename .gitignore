@@ -6,3 +6,4 @@ composer.lock
 /vendor/
 .DS_Store
 .phpunit.cache/
+/_dev/addons-screenshots/

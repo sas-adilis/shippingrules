@@ -1,0 +1,84 @@
+# Captures Addons — Règles de frais de transport (shippingrules)
+# Placé dans _dev/ : exclu automatiquement du ZIP de release
+#
+#   cd ~/Sites/_outils/ps-addons-shots && node shoot.mjs /Users/adilis/Sites/Prestashop/modules/shippingrules/_dev/screens.yml --headed --debug
+#
+# Boutique : PrestaShop en Docker sur le Mac → profil .env.docker de l'outil
+#
+# Prérequis : jeu de démo chargé (vide la table des règles, la 1re règle a l'ID 1)
+#   php modules/shippingrules/_dev/demo-data.php
+#   1 Pros -50 % · 2 Livraison offerte dès 60 € en France · 3 Supplément Corse · 4 Colis lourds +12 € dès 20 kg
+#   5 Retrait impossible au-delà de 30 kg · 6 Tarif unique 4,90 € dès 3 articles · 7 Vendredi 18h-20h -3 €
+#   8 Export Amérique du Nord +15 % · 9 Soldes d'été (désactivée)
+
+env: docker
+module: shippingrules
+languages: [fr, en]
+output: addons-screenshots
+
+shop:
+  ignore_https_errors: true
+
+mode: browser        # fenêtre seule, 1200×1200
+sidebar: false       # menu gauche PrestaShop masqué
+toolbar: false       # masque « Configurer / Précédent / Traduire / Points d'accroche »
+zoom: 1
+
+scripts:
+  # masque toute secure_key / token visible
+  - |
+    (() => {
+      const mask = (s) => s.replace(/(secure_key=|token=)[A-Za-z0-9]+/g, '$1••••••••');
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) if (/secure_key=|token=/.test(w.currentNode.nodeValue)) w.currentNode.nodeValue = mask(w.currentNode.nodeValue);
+      document.querySelectorAll('input, textarea').forEach((i) => { if (/secure_key=|token=/.test(i.value)) i.value = mask(i.value) });
+    })()
+
+# ------------------------------------------------------------------ séquences réutilisées
+# Repères pour cadrer chaque bloc du formulaire :
+# 0 Transporteur et localisation, 1 Action, 2 Conditions, 3 Contenu du panier, 4 Planning
+x-blocs: &blocs
+  - wait: "select[name=rule_type]"
+  - wait: 800                                   # affichage des champs selon la zone et le type (JS)
+  - eval: "document.querySelectorAll('#content form .separator').forEach((e, i) => { (e.closest('.form-group') || e).id = 'sr-sec-' + i })"
+
+screens:
+  # 1. La liste des règles, classées par priorité
+  - id: 01-liste-regles
+    url: index.php?controller=AdminShippingRules
+    title: { fr: "Vos frais de port, *gérés par des règles*", en: "Your shipping costs, *driven by rules*" }
+
+  # 2. Surcoût par codes postaux (Corse) : transporteur, zone, pays, codes postaux + action
+  - id: 02-codes-postaux
+    url: index.php?controller=AdminShippingRules&updateshipping_rule&id_shipping_rule=3
+    actions: *blocs
+    scroll_to: "#sr-sec-0"
+    title: { fr: "Un surcoût *pour la Corse ou les îles*, au code postal près", en: "A surcharge *for islands*, down to the postcode" }
+
+  # 3. Livraison offerte dès 60 € : conditions de montant
+  - id: 03-livraison-offerte
+    url: index.php?controller=AdminShippingRules&updateshipping_rule&id_shipping_rule=2
+    actions: *blocs
+    scroll_to: "#sr-sec-1"
+    title: { fr: "*Livraison offerte* dès 60 €, par transporteur et par pays", en: "*Free shipping* from €60, per carrier and country" }
+
+  # 4. Masquer un transporteur au-delà d'un poids
+  - id: 04-masquer-transporteur
+    url: index.php?controller=AdminShippingRules&updateshipping_rule&id_shipping_rule=5
+    actions: *blocs
+    scroll_to: "#sr-sec-1"
+    title: { fr: "*Masquez un transporteur* pour les colis trop lourds", en: "*Hide a carrier* for parcels that are too heavy" }
+
+  # 5. Contenu du panier : tarif unique dès 3 articles
+  - id: 05-contenu-panier
+    url: index.php?controller=AdminShippingRules&updateshipping_rule&id_shipping_rule=6
+    actions: *blocs
+    scroll_to: "#sr-sec-3"
+    title: { fr: "Selon *le contenu du panier* : quantité, catégories, marques, codes promo", en: "Based on *cart content*: quantity, categories, brands, vouchers" }
+
+  # 6. Planning : vendredi 18h-20h
+  - id: 06-planning
+    url: index.php?controller=AdminShippingRules&updateshipping_rule&id_shipping_rule=7
+    actions: *blocs
+    scroll_to: "#sr-sec-4"
+    title: { fr: "Des offres *par jour et par heure*", en: "Offers *by day and time*" }
