@@ -46,6 +46,7 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->_defaultOrderWay = 'ASC';
 
         $this->addRowAction('edit');
+        $this->addRowAction('duplicate');
         $this->addRowAction('delete');
 
         $this->_select = 'co_l.name country_name, ca.name carrier_name, z.name zone_name';
@@ -173,6 +174,40 @@ class AdminShippingRulesController extends ModuleAdminController
         if ($is_shop_context) {
             $this->fields_list['active']['filter_key'] = 'srs!active';
         }
+    }
+
+    public function initProcess(): void
+    {
+        parent::initProcess();
+
+        if (Tools::isSubmit('duplicate' . $this->table)) {
+            $this->action = 'duplicate';
+        }
+    }
+
+    public function processDuplicate(): void
+    {
+        if (!$this->access('add')) {
+            $this->errors[] = $this->trans('You do not have permission to add this.', [], 'Admin.Notifications.Error');
+
+            return;
+        }
+
+        $id_shipping_rule = (int) Tools::getValue($this->identifier);
+        $shipping_rule = new ShippingRulesClass($id_shipping_rule);
+        if (!Validate::isLoadedObject($shipping_rule)) {
+            $this->errors[] = sprintf($this->l('The shipping rule %d can not be loaded.'), $id_shipping_rule);
+
+            return;
+        }
+
+        if (!$shipping_rule->duplicate()) {
+            $this->errors[] = sprintf($this->l('Can not duplicate the shipping rule %d.'), $id_shipping_rule);
+
+            return;
+        }
+
+        $this->redirect_after = self::$currentIndex . '&conf=19&token=' . $this->token;
     }
 
     public function getCarrierName(?string $carrier, array $tr): string

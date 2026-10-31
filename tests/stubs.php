@@ -29,6 +29,8 @@ class ObjectModel
 
     public function add($autoDate = true, $nullValues = false)
     {
+        $this->id = 100;
+
         return true;
     }
 

@@ -91,3 +91,4 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_9d1a0949c39e66
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_9a5ed20d57dba298e9ce1a3a27b302b7'] = 'La quantità minima deve essere inferiore alla quantità massima.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_e6f3202a3425dea4bada1c501533e26d'] = 'Entrambe le ore sono obbligatorie e devono essere nel formato HH:MM.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_1037c52723a50f188a2f033aaffca6d7'] = 'L\'ora di inizio e l\'ora di fine devono essere diverse.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5f92b3ab9e20cc1eb8c167e604b6830e'] = 'Impossibile duplicare la regola di spedizione %d.';

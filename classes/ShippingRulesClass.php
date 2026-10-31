@@ -139,6 +139,32 @@ class ShippingRulesClass extends ObjectModel
     }
 
     /**
+     * Copy of the rule, disabled and with the lowest priority, associated with the same shops.
+     */
+    public function duplicate(): ?self
+    {
+        $copy = new self((int) $this->id);
+        $copy->id = null;
+        $copy->position = 0;
+        $copy->active = 0;
+
+        if (!$copy->add()) {
+            return null;
+        }
+
+        if (Shop::isFeatureActive()) {
+            Db::getInstance()->execute(
+                'INSERT IGNORE INTO `' . _DB_PREFIX_ . 'shipping_rule_shop` (`id_shipping_rule`, `id_shop`, `active`)
+                SELECT ' . (int) $copy->id . ', `id_shop`, 0
+                FROM `' . _DB_PREFIX_ . 'shipping_rule_shop`
+                WHERE `id_shipping_rule` = ' . (int) $this->id
+            );
+        }
+
+        return $copy;
+    }
+
+    /**
      * In a single shop context, the status to flip is the one of the shop, not the global one.
      */
     public function toggleStatus(): bool

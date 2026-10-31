@@ -91,3 +91,4 @@ $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_9d1a0949c39e66
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_9a5ed20d57dba298e9ce1a3a27b302b7'] = 'Die Mindestmenge muss kleiner als die Höchstmenge sein.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_e6f3202a3425dea4bada1c501533e26d'] = 'Beide Zeiten sind erforderlich und müssen im Format HH:MM angegeben werden.';
 $_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_1037c52723a50f188a2f033aaffca6d7'] = 'Die Startzeit und die Endzeit müssen unterschiedlich sein.';
+$_MODULE['<{shippingrules}prestashop>adminshippingrulescontroller_5f92b3ab9e20cc1eb8c167e604b6830e'] = 'Die Versandregel %d kann nicht dupliziert werden.';

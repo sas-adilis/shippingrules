@@ -98,3 +98,44 @@ it('flips the status of the current shop when editing in a shop context', functi
     expect((bool) $rule->active)->toBeTrue()
         ->and(implode("\n", Db::$log))->toContain('`id_shop` = 3');
 });
+
+it('duplicates a rule as a disabled rule at the end of the list', function () {
+    Db::$handler = function ($method) {
+        return $method === 'getValue' ? '4' : true;
+    };
+
+    $rule = new ShippingRulesClass(7);
+    $rule->active = 1;
+    $rule->position = 2;
+    $copy = $rule->duplicate();
+
+    expect($copy)->toBeInstanceOf(ShippingRulesClass::class)
+        ->and($copy->id)->not->toBe(7)
+        ->and((bool) $copy->active)->toBeFalse()
+        ->and($copy->position)->toBe(5)
+        ->and($rule->position)->toBe(2);
+});
+
+it('copies the shop associations of a rule in multistore', function () {
+    Shop::$featureActive = true;
+    Db::$handler = function () {
+        return true;
+    };
+
+    (new ShippingRulesClass(7))->duplicate();
+
+    $sql = preg_replace('/\s+/', ' ', implode("\n", Db::$log));
+    expect($sql)->toContain('INSERT IGNORE INTO `ps_shipping_rule_shop`')
+        ->toContain('SELECT 100, `id_shop`, 0')
+        ->toContain('WHERE `id_shipping_rule` = 7');
+});
+
+it('does not touch the shop table without multistore', function () {
+    Db::$handler = function () {
+        return true;
+    };
+
+    (new ShippingRulesClass(7))->duplicate();
+
+    expect(implode("\n", Db::$log))->not->toContain('INSERT IGNORE');
+});
