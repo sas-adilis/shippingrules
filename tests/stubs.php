@@ -285,11 +285,6 @@ class Context
     {
         self::$instance = null;
     }
-
-    public function getComputingPrecision()
-    {
-        return 2;
-    }
 }
 
 class Validate
@@ -344,6 +339,7 @@ class Currency
 
     public $id;
     public $conversion_rate;
+    public $precision = 2;
 
     public function __construct($id)
     {

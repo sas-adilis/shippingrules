@@ -1,4 +1,6 @@
 <?php
+
+require_once __DIR__ . '/Integration/helpers.php';
 /**
  * A rule row (shipping_rule) with the defaults of a plain "free shipping" rule.
  *
@@ -118,4 +120,70 @@ pest()->beforeEach(function () {
     Cart::$cartRuleIds = [];
     Product::$categories = [];
     TestableShippingRules::$now = null;
+    TestableShippingRules::$legacyOverride = false;
 })->in('Unit');
+
+// Integration tests need a real shop (see bootstrap.php).
+pest()->beforeEach(function () {
+    if (!SR_REAL_SHOP) {
+        $this->markTestSkipped('Integration tests need a PrestaShop shop (run them in the Docker stack, see bin/test-module.sh).');
+    }
+})->in('Integration');
+
+// PrestaShop and the other modules raise deprecations of their own (and the error handler of ps_eventbus fails on them):
+// only the module's code counts.
+pest()->beforeEach(function () {
+    if (!SR_REAL_SHOP) {
+        return;
+    }
+
+    $module = dirname(__DIR__) . '/';
+    $previous = null;
+    $GLOBALS['sr_error_handler'] = function ($level, $message, $file = '', $line = 0) use (&$previous, $module) {
+        $isOurs = strpos((string) $file, $module) === 0 && strpos((string) $file, $module . 'vendor/') !== 0;
+        if (($level & (E_DEPRECATED | E_USER_DEPRECATED)) && !$isOurs) {
+            return true;
+        }
+        // The cache of the container of PrestaShop is empty after a reset of the shop
+        if (($level & E_WARNING) && !$isOurs && strpos((string) $message, 'filemtime(') === 0) {
+            return true;
+        }
+
+        return $previous ? $previous($level, $message, $file, $line) : false;
+    };
+    $previous = set_error_handler($GLOBALS['sr_error_handler']);
+
+    $GLOBALS['sr_exception_handler'] = set_exception_handler(function () {
+    });
+    restore_exception_handler();
+})->in('Integration');
+
+pest()->afterEach(function () {
+    if (!SR_REAL_SHOP) {
+        return;
+    }
+
+    srCleanRules();
+
+    // PrestaShop may have stacked its own handler (Symfony) on ours: remove everything down to ours.
+    for ($i = 0; $i < 10; ++$i) {
+        $current = set_error_handler(function () {
+            return false;
+        });
+        restore_error_handler();
+        restore_error_handler();
+        if ($current === $GLOBALS['sr_error_handler']) {
+            break;
+        }
+    }
+    // Same for the exception handler PrestaShop sets when it builds its first cart.
+    for ($i = 0; $i < 10; ++$i) {
+        $current = set_exception_handler(function () {
+        });
+        restore_exception_handler();
+        if ($current === $GLOBALS['sr_exception_handler']) {
+            break;
+        }
+        restore_exception_handler();
+    }
+})->in('Integration');

@@ -310,3 +310,41 @@ it('ignores a single hour', function () {
 
     expect(runHook([makeRule(['hour_from' => '09:00', 'hour_to' => null])]))->toBe(0.0);
 });
+
+// ── Native hook of PrestaShop 9.2 ───────────────────────────────────────────
+
+/**
+ * @return float|false
+ */
+function runNativeHook(array $rules)
+{
+    Cache::$store = [];
+    Db::$handler = function ($method) use ($rules) {
+        return $method === 'executeS' ? $rules : false;
+    };
+
+    $shippingCost = 10.0;
+    $params = [
+        'cart' => new Cart(),
+        'shippingCost' => &$shippingCost,
+        'id_carrier' => 1,
+        'use_tax' => false,
+        'default_country' => (object) ['id' => 8, 'id_zone' => 1],
+        'product_list' => null,
+        'id_zone' => null,
+    ];
+    (new TestableShippingRules())->hookActionCartGetPackageShippingCost($params);
+
+    return $shippingCost;
+}
+
+it('applies the rules through the native hook', function () {
+    expect(runNativeHook([makeRule(['rule_type' => ShippingRulesClass::RULE_TYPE_SET_AMOUNT, 'value' => 4])]))->toBe(4.0);
+    expect(runNativeHook([makeRule(['rule_type' => ShippingRulesClass::RULE_TYPE_DISABLE])]))->toBeFalse();
+});
+
+it('stays silent through the native hook while the old override is in place', function () {
+    TestableShippingRules::$legacyOverride = true;
+
+    expect(runNativeHook([makeRule()]))->toBe(10.0);
+});

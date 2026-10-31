@@ -15,5 +15,8 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

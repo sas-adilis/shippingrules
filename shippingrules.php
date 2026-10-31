@@ -41,7 +41,56 @@ class ShippingRules extends Module
         return
             parent::install()
             && $this->installTab()
-            && $this->registerHook('actionGetPackageShippingCost');
+            && $this->registerHook('actionGetPackageShippingCost')
+            && $this->registerHook('actionCartGetPackageShippingCost');
+    }
+
+    /**
+     * Since PrestaShop 9.2 the core fires actionCartGetPackageShippingCost itself (getPackageShippingCostValue()
+     * is the refactoring that comes with it): the override of Cart, which fires the legacy hook, is not needed anymore.
+     */
+    public static function hasNativeShippingCostHook(): bool
+    {
+        return method_exists('CartCore', 'getPackageShippingCostValue');
+    }
+
+    public function installOverrides(): bool
+    {
+        return self::hasNativeShippingCostHook() ? true : (bool) parent::installOverrides();
+    }
+
+    /**
+     * Whether the override of Cart installed by an older version of the module is still in place: it fires the
+     * legacy hook, so the native one must stay silent or the rules would be applied twice.
+     */
+    protected function isLegacyOverrideActive(): bool
+    {
+        static $active = null;
+
+        if ($active === null) {
+            $method = new ReflectionMethod('Cart', 'getPackageShippingCost');
+            $file = $method->getFileName();
+            $active = $method->getDeclaringClass()->getName() === 'Cart'
+                && $file !== false
+                && strpos((string) file_get_contents($file), 'actionGetPackageShippingCost') !== false;
+        }
+
+        return $active;
+    }
+
+    /**
+     * Native hook of PrestaShop 9.2 and later.
+     *
+     * @param array<string, mixed> $params
+     */
+    public function hookActionCartGetPackageShippingCost(array $params): void
+    {
+        if ($this->isLegacyOverrideActive()) {
+            return;
+        }
+
+        $params['shipping_cost'] = &$params['shippingCost'];
+        $this->hookActionGetPackageShippingCost($params);
     }
 
     /**
@@ -255,8 +304,8 @@ class ShippingRules extends Module
                 }
 
                 if ($params['shipping_cost'] !== false) {
-                    $context = Context::getContext();
-                    $precision = method_exists($context, 'getComputingPrecision') ? $context->getComputingPrecision() : (int) _PS_PRICE_COMPUTE_PRECISION_;
+                    // The cost is in the currency of the cart (Currency::$precision exists since PrestaShop 1.7.6)
+                    $precision = isset($cart_currency->precision) ? (int) $cart_currency->precision : (int) _PS_PRICE_COMPUTE_PRECISION_;
                     $params['shipping_cost'] = (float) Tools::ps_round((float) $params['shipping_cost'], $precision);
                 }
 

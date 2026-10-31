@@ -8,8 +8,19 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-function upgrade_module_1_3_0(): bool
+/**
+ * @param Module $module
+ */
+function upgrade_module_1_3_0($module): bool
 {
+    // PrestaShop 9.2 fires its own hook: the override of Cart is not needed anymore
+    if (!$module->registerHook('actionCartGetPackageShippingCost')) {
+        return false;
+    }
+    if (ShippingRules::hasNativeShippingCostHook() && !$module->uninstallOverrides()) {
+        return false;
+    }
+
     $columns = [
         'minimum_quantity' => 'int(10) unsigned NOT NULL DEFAULT 0',
         'maximum_quantity' => 'int(10) unsigned NOT NULL DEFAULT 0',
