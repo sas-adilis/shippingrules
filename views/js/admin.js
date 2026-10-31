@@ -61,6 +61,10 @@ $(function () {
         }
     }
 
+    if ($.fn.chosen) {
+        $('select.chosen').chosen({width: '400px'});
+    }
+
     $idZoneSelect.on('change', function () {
         updateCountryOptions(parseInt($(this).val(), 10) || 0);
     }).trigger('change');

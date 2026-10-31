@@ -19,3 +19,12 @@ it('normalizes a postcode for comparison', function (string $input, string $expe
     'case' => ['sw1a 1aa', 'SW1A1AA'],
     'surrounding blanks' => ['  75001 ', '75001'],
 ]);
+
+it('cleans an id list', function (?string $input, array $expected) {
+    expect(ShippingRules::getCleanedIdList($input))->toBe($expected);
+})->with([
+    'null' => [null, []],
+    'empty' => ['', []],
+    'ids' => ['3,1,2', [3, 1, 2]],
+    'junk and zeros' => [' 3, ,abc,0,3,4 ', [3, 4]],
+]);

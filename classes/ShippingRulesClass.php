@@ -49,6 +49,22 @@ class ShippingRulesClass extends ObjectModel
     /** @var float */
     public $value = 0;
     /** @var int */
+    public $minimum_quantity = 0;
+    /** @var int */
+    public $maximum_quantity = 0;
+    /** @var string|null comma separated category ids */
+    public $categories;
+    /** @var string|null comma separated manufacturer ids */
+    public $manufacturers;
+    /** @var string|null comma separated cart rule ids */
+    public $cart_rules;
+    /** @var string|null comma separated ISO days of the week (1 = Monday ... 7 = Sunday) */
+    public $days;
+    /** @var string|null HH:MM */
+    public $hour_from;
+    /** @var string|null HH:MM */
+    public $hour_to;
+    /** @var int */
     public $rule_type = self::RULE_TYPE_FREE;
     /** @var string */
     public $from;
@@ -76,6 +92,14 @@ class ShippingRulesClass extends ObjectModel
             'maximum_amount_tax' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
             'maximum_amount_currency' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId'],
             'value' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
+            'minimum_quantity' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt'],
+            'maximum_quantity' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt'],
+            'categories' => ['type' => self::TYPE_STRING],
+            'manufacturers' => ['type' => self::TYPE_STRING],
+            'cart_rules' => ['type' => self::TYPE_STRING],
+            'days' => ['type' => self::TYPE_STRING],
+            'hour_from' => ['type' => self::TYPE_STRING, 'size' => 5],
+            'hour_to' => ['type' => self::TYPE_STRING, 'size' => 5],
             'minimum_weight' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
             'maximum_weight' => ['type' => self::TYPE_FLOAT, 'validate' => 'isFloat', 'required' => true],
             'rule_type' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'required' => true],

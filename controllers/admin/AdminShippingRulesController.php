@@ -227,6 +227,73 @@ class AdminShippingRulesController extends ModuleAdminController
         return '';
     }
 
+    /**
+     * @return array<int, array{id: int, name: string}>
+     */
+    protected function getCategoryOptions(): array
+    {
+        $options = [];
+        $categories = Category::getCategories((int) $this->context->language->id, false, false);
+        foreach ($categories as $category) {
+            $options[] = ['id' => (int) $category['id_category'], 'name' => str_repeat('- ', max(0, (int) $category['level_depth'] - 1)) . $category['name']];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string}>
+     */
+    protected function getManufacturerOptions(): array
+    {
+        $options = [];
+        foreach (Manufacturer::getManufacturers(false, (int) $this->context->language->id) as $manufacturer) {
+            $options[] = ['id' => (int) $manufacturer['id_manufacturer'], 'name' => $manufacturer['name']];
+        }
+
+        return $options;
+    }
+
+    /**
+     * Active cart rules which are not expired yet.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    protected function getCartRuleOptions(): array
+    {
+        $rows = Db::getInstance()->executeS('
+            SELECT cr.`id_cart_rule`, cr.`code`, crl.`name`
+            FROM `' . _DB_PREFIX_ . 'cart_rule` cr
+            LEFT JOIN `' . _DB_PREFIX_ . 'cart_rule_lang` crl ON (crl.`id_cart_rule` = cr.`id_cart_rule` AND crl.`id_lang` = ' . (int) $this->context->language->id . ')
+            WHERE cr.`active` = 1 AND cr.`date_to` >= NOW()
+            ORDER BY crl.`name`
+            LIMIT 500
+        ');
+
+        $options = [];
+        foreach ($rows ?: [] as $row) {
+            $options[] = ['id' => (int) $row['id_cart_rule'], 'name' => $row['name'] . ($row['code'] ? ' (' . $row['code'] . ')' : '')];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string}>
+     */
+    protected function getDayOptions(): array
+    {
+        return [
+            ['id' => 1, 'name' => $this->l('Monday')],
+            ['id' => 2, 'name' => $this->l('Tuesday')],
+            ['id' => 3, 'name' => $this->l('Wednesday')],
+            ['id' => 4, 'name' => $this->l('Thursday')],
+            ['id' => 5, 'name' => $this->l('Friday')],
+            ['id' => 6, 'name' => $this->l('Saturday')],
+            ['id' => 7, 'name' => $this->l('Sunday')],
+        ];
+    }
+
     public function renderForm(): string
     {
         $carriers = Carrier::getCarriers((int) $this->context->language->id, true, 0, false, null, Carrier::ALL_CARRIERS);
@@ -404,6 +471,90 @@ class AdminShippingRulesController extends ModuleAdminController
                     'required' => true,
                 ],
                 [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'name' => '',
+                    'content' => $this->l('Cart content'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Minimum quantity'),
+                    'name' => 'minimum_quantity',
+                    'class' => 'fixed-width-md',
+                    'maxlength' => 10,
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Maximum quantity'),
+                    'desc' => $this->l('Leave 0 for no limit.'),
+                    'name' => 'maximum_quantity',
+                    'class' => 'fixed-width-md',
+                    'maxlength' => 10,
+                ],
+                [
+                    'type' => 'select',
+                    'label' => $this->l('Product categories'),
+                    'desc' => $this->l('The rule applies if at least one product belongs to one of these categories. Leave empty for no restriction.'),
+                    'name' => 'categories[]',
+                    'id' => 'categories',
+                    'multiple' => true,
+                    'class' => 'chosen',
+                    'options' => ['query' => $this->getCategoryOptions(), 'id' => 'id', 'name' => 'name'],
+                ],
+                [
+                    'type' => 'select',
+                    'label' => $this->l('Manufacturers'),
+                    'desc' => $this->l('The rule applies if at least one product comes from one of these manufacturers. Leave empty for no restriction.'),
+                    'name' => 'manufacturers[]',
+                    'id' => 'manufacturers',
+                    'multiple' => true,
+                    'class' => 'chosen',
+                    'options' => ['query' => $this->getManufacturerOptions(), 'id' => 'id', 'name' => 'name'],
+                ],
+                [
+                    'type' => 'select',
+                    'label' => $this->l('Cart rules'),
+                    'desc' => $this->l('The rule applies if at least one of these cart rules is applied to the cart. Leave empty for no restriction.'),
+                    'name' => 'cart_rules[]',
+                    'id' => 'cart_rules',
+                    'multiple' => true,
+                    'class' => 'chosen',
+                    'options' => ['query' => $this->getCartRuleOptions(), 'id' => 'id', 'name' => 'name'],
+                ],
+                [
+                    'type' => 'separator',
+                    'col' => 12,
+                    'name' => '',
+                    'content' => $this->l('Schedule'),
+                ],
+                [
+                    'type' => 'select',
+                    'label' => $this->l('Days of the week'),
+                    'desc' => $this->l('Leave empty for every day.'),
+                    'name' => 'days[]',
+                    'id' => 'days',
+                    'multiple' => true,
+                    'class' => 'chosen',
+                    'options' => ['query' => $this->getDayOptions(), 'id' => 'id', 'name' => 'name'],
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('From hour'),
+                    'name' => 'hour_from',
+                    'class' => 'fixed-width-md',
+                    'maxlength' => 5,
+                    'placeholder' => 'HH:MM',
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('To hour'),
+                    'desc' => $this->l('Format HH:MM. The end hour is excluded, and a range such as 22:00 - 06:00 spans midnight. Leave both empty for the whole day.'),
+                    'name' => 'hour_to',
+                    'class' => 'fixed-width-md',
+                    'maxlength' => 5,
+                    'placeholder' => 'HH:MM',
+                ],
+                [
                     'type' => 'datetime',
                     'label' => $this->l('From'),
                     'required' => true,
@@ -443,6 +594,12 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->fields_value['minimum_amount_currency'] = $this->object->minimum_amount_currency ?: $default_currency;
         $this->fields_value['maximum_amount_tax'] = $this->object->maximum_amount_tax;
         $this->fields_value['maximum_amount_currency'] = $this->object->maximum_amount_currency ?: $default_currency;
+
+        foreach (['categories', 'manufacturers', 'cart_rules', 'days'] as $field) {
+            $this->fields_value[$field . '[]'] = Tools::getIsset($field)
+                ? array_map('intval', (array) Tools::getValue($field))
+                : ShippingRules::getCleanedIdList($this->object->{$field});
+        }
 
         $this->fields_value['impact_amount'] = $this->fields_value['impact_percent'] = $this->fields_value['new_amount'] = 0;
         switch ($this->object->rule_type) {
@@ -485,6 +642,21 @@ class AdminShippingRulesController extends ModuleAdminController
 
         if ((float) Tools::getValue('maximum_weight') > 0 && (float) Tools::getValue('minimum_weight') > (float) Tools::getValue('maximum_weight')) {
             $this->errors[] = $this->l('The minimum weight must be less than the maximum weight.');
+        }
+
+        if ((int) Tools::getValue('maximum_quantity') > 0 && (int) Tools::getValue('minimum_quantity') > (int) Tools::getValue('maximum_quantity')) {
+            $this->errors[] = $this->l('The minimum quantity must be less than the maximum quantity.');
+        }
+
+        $hour_from = (string) Tools::getValue('hour_from');
+        $hour_to = (string) Tools::getValue('hour_to');
+        if ($hour_from !== '' || $hour_to !== '') {
+            $format = '/^([01][0-9]|2[0-3]):[0-5][0-9]$/';
+            if (!preg_match($format, $hour_from) || !preg_match($format, $hour_to)) {
+                $this->errors[] = $this->l('Both hours are required and must be in the HH:MM format.');
+            } elseif ($hour_from === $hour_to) {
+                $this->errors[] = $this->l('The start hour and the end hour must be different.');
+            }
         }
 
         if ((int) Tools::getValue('id_customer') && !Validate::isLoadedObject(new Customer((int) Tools::getValue('id_customer')))) {
@@ -544,6 +716,12 @@ class AdminShippingRulesController extends ModuleAdminController
             return;
         }
 
+        // Multiple selects are absent from the POST when nothing is selected
+        foreach (['categories', 'manufacturers', 'cart_rules', 'days'] as $field) {
+            $object->{$field} = implode(',', ShippingRules::getCleanedIdList(implode(',', (array) Tools::getValue($field))));
+        }
+        $object->days = implode(',', array_intersect(ShippingRules::getCleanedIdList($object->days), range(1, 7)));
+
         $object->value = 0;
         switch (Tools::getValue('rule_type')) {
             case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
@@ -572,6 +750,7 @@ class AdminShippingRulesController extends ModuleAdminController
         $this->addJS($this->module->getPathUri() . 'views/js/admin.js');
         $this->addCSS($this->module->getPathUri() . 'views/css/admin.css');
         $this->addJqueryPlugin('autocomplete');
+        $this->addJqueryPlugin('chosen');
         Media::addJsDef([
             'adminShippingRulesToken' => $this->token,
         ]);

@@ -19,7 +19,7 @@ class ShippingRules extends Module
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->tab = 'shipping_logistics';
-        $this->version = '1.2.9';
+        $this->version = '1.3.0';
         $this->displayName = $this->l('Shipping Rules');
         $this->description = $this->l('Create shipping rules based on country, zone, amount, date and carrier.');
         $this->confirmUninstall = $this->l('Are you sure ?');
@@ -219,6 +219,10 @@ class ShippingRules extends Module
                     }
                 }
 
+                if (!$this->matchesCartConditions($shipping_rule, $address_products, $cart)) {
+                    continue;
+                }
+
                 switch ((int) $shipping_rule['rule_type']) {
                     case ShippingRulesClass::RULE_TYPE_ADDITIONAL:
                         $params['shipping_cost'] += $this->getFixedAmount($shipping_rule['value'], $cart, $cart_currency, $carrier, $use_tax, $address);
@@ -262,6 +266,92 @@ class ShippingRules extends Module
     }
 
     /**
+     * Conditions on the content of the package (quantity, categories, manufacturers, cart rules) and on the moment.
+     *
+     * @param array<string, mixed> $shipping_rule
+     * @param array<int, array<string, mixed>> $products
+     */
+    private function matchesCartConditions(array $shipping_rule, array $products, Cart $cart): bool
+    {
+        $quantity = 0;
+        foreach ($products as $product) {
+            $quantity += isset($product['cart_quantity']) ? (int) $product['cart_quantity'] : 0;
+        }
+
+        if ($quantity < (int) $shipping_rule['minimum_quantity']) {
+            return false;
+        }
+
+        if ((int) $shipping_rule['maximum_quantity'] > 0 && $quantity > (int) $shipping_rule['maximum_quantity']) {
+            return false;
+        }
+
+        $now = $this->getCurrentTimestamp();
+
+        $days = self::getCleanedIdList($shipping_rule['days']);
+        if ($days && !in_array((int) date('N', $now), $days, true)) {
+            return false;
+        }
+
+        if (!empty($shipping_rule['hour_from']) && !empty($shipping_rule['hour_to'])) {
+            $time = date('H:i', $now);
+            $from = (string) $shipping_rule['hour_from'];
+            $to = (string) $shipping_rule['hour_to'];
+            $in_range = $from < $to ? ($time >= $from && $time < $to) : ($time >= $from || $time < $to);
+            if (!$in_range) {
+                return false;
+            }
+        }
+
+        $categories = self::getCleanedIdList($shipping_rule['categories']);
+        if ($categories) {
+            $found = false;
+            foreach ($products as $product) {
+                if (array_intersect($categories, array_map('intval', Product::getProductCategories((int) $product['id_product'])))) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                return false;
+            }
+        }
+
+        $manufacturers = self::getCleanedIdList($shipping_rule['manufacturers']);
+        if ($manufacturers) {
+            $found = false;
+            foreach ($products as $product) {
+                if (isset($product['id_manufacturer']) && in_array((int) $product['id_manufacturer'], $manufacturers, true)) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                return false;
+            }
+        }
+
+        $cart_rules = self::getCleanedIdList($shipping_rule['cart_rules']);
+        if ($cart_rules) {
+            // Cart::getCartRules() computes the value of each rule, which asks for the shipping cost again: read the table instead
+            $applied = $cart->id ? Db::getInstance()->executeS(
+                'SELECT `id_cart_rule` FROM `' . _DB_PREFIX_ . 'cart_cart_rule` WHERE `id_cart` = ' . (int) $cart->id
+            ) : [];
+            $applied = array_map('intval', array_column($applied ?: [], 'id_cart_rule'));
+            if (!array_intersect($cart_rules, $applied)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected function getCurrentTimestamp(): int
+    {
+        return time();
+    }
+
+    /**
      * Converts a rule amount (shop default currency, tax excl.) to the cart currency, with the carrier taxes if required.
      *
      * @param float|string $value
@@ -289,6 +379,16 @@ class ShippingRules extends Module
     private static function normalizePostcode(string $postcode): string
     {
         return strtoupper(str_replace(' ', '', trim($postcode)));
+    }
+
+    /**
+     * @return int[]
+     */
+    public static function getCleanedIdList(?string $list): array
+    {
+        $ids = array_map('intval', explode(',', (string) $list));
+
+        return array_values(array_unique(array_filter($ids)));
     }
 
     public static function getCleanedPostcodeList(?string $postcode_list): array

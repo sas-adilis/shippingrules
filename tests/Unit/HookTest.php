@@ -223,3 +223,90 @@ it('queries the rules once per context', function () {
 
     expect($queries)->toHaveCount(1);
 });
+
+// ── Cart content conditions ─────────────────────────────────────────────────
+
+it('filters on the quantity of products', function (array $rule, int $quantity, bool $applies) {
+    $products = [['id_product' => 1, 'cart_quantity' => $quantity - 1], ['id_product' => 2, 'cart_quantity' => 1]];
+
+    expect(runHook([makeRule($rule)], [], ['products' => $products]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'below the minimum' => [['minimum_quantity' => 3], 2, false],
+    'at the minimum' => [['minimum_quantity' => 3], 3, true],
+    'above the maximum' => [['maximum_quantity' => 4], 5, false],
+    'at the maximum' => [['maximum_quantity' => 4], 4, true],
+    'no maximum with 0' => [['maximum_quantity' => 0], 500, true],
+]);
+
+it('filters on the categories of the products', function (?string $list, bool $applies) {
+    Product::$categories = [1 => [2, 3], 2 => [9]];
+    $products = [['id_product' => 1, 'cart_quantity' => 1], ['id_product' => 2, 'cart_quantity' => 1]];
+
+    expect(runHook([makeRule(['categories' => $list])], [], ['products' => $products]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'no restriction' => [null, true],
+    'a category of the first product' => ['3', true],
+    'a category of the second product' => ['7,9', true],
+    'no matching category' => ['4,5', false],
+]);
+
+it('filters on the manufacturers of the products', function (?string $list, bool $applies) {
+    $products = [['id_product' => 1, 'cart_quantity' => 1, 'id_manufacturer' => '6'], ['id_product' => 2, 'cart_quantity' => 1, 'id_manufacturer' => '0']];
+
+    expect(runHook([makeRule(['manufacturers' => $list])], [], ['products' => $products]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'no restriction' => [null, true],
+    'matching' => ['5,6', true],
+    'no matching manufacturer' => ['7', false],
+]);
+
+it('filters on the cart rules applied to the cart', function (?string $list, array $applied, bool $applies) {
+    Cart::$cartRuleIds = $applied;
+
+    expect(runHook([makeRule(['cart_rules' => $list])]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'no restriction' => [null, [], true],
+    'applied' => ['4,8', [8], true],
+    'not applied' => ['4,8', [5], false],
+    'no cart rule at all' => ['4', [], false],
+]);
+
+it('never reads the cart rules through the cart, which asks for the shipping cost again', function () {
+    Cart::$cartRuleIds = [4];
+    runHook([makeRule(['cart_rules' => '4'])]);
+
+    expect(implode("\n", Db::$log))->toContain('FROM `ps_cart_cart_rule` WHERE `id_cart` = 1');
+});
+
+// ── Schedule conditions ─────────────────────────────────────────────────────
+
+it('filters on the day of the week', function (?string $days, string $day, bool $applies) {
+    TestableShippingRules::$now = strtotime($day . ' this week 12:00');
+
+    expect(runHook([makeRule(['days' => $days])]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'every day' => [null, 'monday', true],
+    'listed' => ['1,2', 'tuesday', true],
+    'not listed' => ['1,2', 'wednesday', false],
+    'sunday is 7' => ['7', 'sunday', true],
+]);
+
+it('filters on the hour', function (string $from, string $to, string $time, bool $applies) {
+    TestableShippingRules::$now = strtotime('monday this week ' . $time);
+
+    expect(runHook([makeRule(['hour_from' => $from, 'hour_to' => $to])]))->toBe($applies ? 0.0 : 10.0);
+})->with([
+    'inside' => ['09:00', '17:00', '12:30', true],
+    'at the start' => ['09:00', '17:00', '09:00', true],
+    'at the end, excluded' => ['09:00', '17:00', '17:00', false],
+    'before' => ['09:00', '17:00', '08:59', false],
+    'overnight, evening' => ['22:00', '06:00', '23:30', true],
+    'overnight, morning' => ['22:00', '06:00', '05:59', true],
+    'overnight, outside' => ['22:00', '06:00', '12:00', false],
+]);
+
+it('ignores a single hour', function () {
+    TestableShippingRules::$now = strtotime('monday this week 03:00');
+
+    expect(runHook([makeRule(['hour_from' => '09:00', 'hour_to' => null])]))->toBe(0.0);
+});

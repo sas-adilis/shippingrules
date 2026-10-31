@@ -26,6 +26,14 @@ function makeRule(array $overrides = []): array
         'minimum_weight' => 0,
         'maximum_weight' => 0,
         'value' => 0,
+        'minimum_quantity' => 0,
+        'maximum_quantity' => 0,
+        'categories' => null,
+        'manufacturers' => null,
+        'cart_rules' => null,
+        'days' => null,
+        'hour_from' => null,
+        'hour_to' => null,
         'position' => 0,
     ], $overrides);
 }
@@ -41,8 +49,17 @@ function makeRule(array $overrides = []): array
  */
 function runHook(array $rules, array $params = [], array $cart = [], float $cost = 10.0)
 {
-    Db::$handler = function ($method) use ($rules) {
-        return $method === 'executeS' ? $rules : false;
+    Db::$handler = function ($method, $sql) use ($rules) {
+        if ($method !== 'executeS') {
+            return false;
+        }
+        if (strpos($sql, 'cart_cart_rule') !== false) {
+            return array_map(function ($id) {
+                return ['id_cart_rule' => (string) $id];
+            }, Cart::$cartRuleIds);
+        }
+
+        return $rules;
     };
 
     $theCart = new Cart();
@@ -61,7 +78,7 @@ function runHook(array $rules, array $params = [], array $cart = [], float $cost
         'id_zone' => null,
     ], $params);
 
-    (new ShippingRules())->hookActionGetPackageShippingCost($params);
+    (new TestableShippingRules())->hookActionGetPackageShippingCost($params);
 
     return $shipping_cost;
 }
@@ -98,4 +115,7 @@ pest()->beforeEach(function () {
     Carrier::$missing = [];
     Carrier::$taxRate = 20.0;
     Address::$list = [];
+    Cart::$cartRuleIds = [];
+    Product::$categories = [];
+    TestableShippingRules::$now = null;
 })->in('Unit');

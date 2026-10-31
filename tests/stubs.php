@@ -104,6 +104,11 @@ class Tools
         return array_key_exists($key, self::$values) ? self::$values[$key] : $default;
     }
 
+    public static function getIsset($key)
+    {
+        return array_key_exists($key, self::$values);
+    }
+
     public static function convertPriceFull($amount, $from, $to)
     {
         return $amount / $from->conversion_rate * $to->conversion_rate;
@@ -411,9 +416,25 @@ class Address
     }
 }
 
+class Product
+{
+    /** @var array<int, int[]> id_product => category ids */
+    public static $categories = [];
+
+    public static function getProductCategories($id_product = '')
+    {
+        return self::$categories[(int) $id_product] ?? [];
+    }
+}
+
 class Cart
 {
     public const ONLY_PRODUCTS = 1;
+
+    /** @var int[] cart rules applied to the cart (cart_cart_rule) */
+    public static $cartRuleIds = [];
+
+    public $id = 1;
 
     public $id_currency = 1;
     public $id_address_invoice = 0;
